@@ -1,0 +1,94 @@
+
+services:
+  backend:
+    build: ./backend
+    container_name: backend
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@db:${DB_PORT}/${DB_NAME}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      db:
+        condition: service_healthy 
+      redis:
+        condition: service_healthy 
+    ports:
+      - "8001:8001"
+    networks:
+      - backend
+    volumes:
+      - ./backend/game:/app
+    init: true
+    healthcheck:
+      test: ["CMD-SHELL", "python manage.py check --database default || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  db:
+    image: postgres:13
+    container_name: db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    init: true
+
+  redis:
+    image: redis:7
+    container_name: redis
+    env_file:
+      - .env
+    networks:
+      - backend
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    init: true
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:3000"
+      - "8080:80"
+      - "8443:443"
+    depends_on:
+      - backend
+    networks:
+      - backend
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/nginx.conf
+      - nginx-logs:/var/log/nginx
+      - nginx-run:/var/run
+      - ./backend/assets:/usr/share/nginx/html/assets
+    command: ["nginx", "-g", "daemon off;"]
+    restart: always
+    init: true
+
+volumes:
+  nginx-logs:
+  nginx-run:
+
+networks:
+  backend:
+    driver: bridge

@@ -1,0 +1,18 @@
+
+Django==3.2           # Django version 3.2
+redis==4.0.2          # Redis client for Python (used by Django Channels)
+djangorestframework==3.12.4 # (Optional) If you're using Django REST framework
+channels
+channels-redis
+python-dotenv
+dj-database-url
+psycopg2
+djangorestframework
+daphne
+redis 
+django-redis
+celery[redis]
+channels
+channels_redis
+djangorestframework-simplejwt
+django-cors-headers
