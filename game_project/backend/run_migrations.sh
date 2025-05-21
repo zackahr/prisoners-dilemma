@@ -1,12 +1,13 @@
 #!/bin/bash
 
 set -o allexport
-source .env
+source ../.env
 set +o allexport
 
 # Run Django migrations
 echo "Running migrations..."
 
-docker-compose exec -it backend python manage.py makemigrations the_game
-docker-compose exec -it backend python manage.py migrate
+# Run makemigrations and migrate commands in a single bash shell session
+docker-compose exec backend bash -c "python manage.py makemigrations the_game && python manage.py migrate the_game"
+
 echo "Migrations completed!"
