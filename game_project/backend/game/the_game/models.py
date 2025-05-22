@@ -28,8 +28,9 @@ class GameMatch(models.Model):
 class GameRound(models.Model):
     match = models.ForeignKey(GameMatch, related_name='rounds', on_delete=models.CASCADE)
     round_number = models.IntegerField()
-    player_1_action = models.CharField(max_length=10)
+    player_1_action = models.CharField(max_length=10, blank=True, null=True)
     player_2_action = models.CharField(max_length=10, blank=True, null=True)
+
     round_start_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

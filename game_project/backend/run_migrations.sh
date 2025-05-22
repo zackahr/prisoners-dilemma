@@ -8,6 +8,7 @@ set +o allexport
 echo "Running migrations..."
 
 # Run makemigrations and migrate commands in a single bash shell session
-docker-compose exec backend bash -c "python manage.py makemigrations the_game && python manage.py migrate the_game"
+docker-compose exec backend python manage.py makemigrations
 
+docker-compose exec backend python manage.py migrate
 echo "Migrations completed!"

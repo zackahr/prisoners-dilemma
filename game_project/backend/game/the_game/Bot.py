@@ -1,7 +1,12 @@
 import random
 
-class Bot:
-    @staticmethod
-    def get_action(round_number):
-        """ A simple AI that cooperates 50% of the time and defects 50% of the time """
-        return random.choice([COOPERATE, DEFECT])
+def make_bot_decision(player_history, bot_history):
+    """
+     the bot copies the player's previous move, but starts with cooperation.
+    """
+    if not player_history:
+        return "Cooperate"
+    
+    return player_history[-1]
+
+  

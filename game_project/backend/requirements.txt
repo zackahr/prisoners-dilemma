@@ -2,11 +2,11 @@
 Django==3.2   
 redis==4.0.2   
 djangorestframework==3.12.4 
+psycopg2
 channels
 channels-redis
 python-dotenv
 dj-database-url
-psycopg2
 djangorestframework
 daphne
 redis 
