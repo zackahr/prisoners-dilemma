@@ -2,15 +2,16 @@ FROM node:16 as build
 
 WORKDIR /app
 
-
 COPY ./package*.json ./
 
-
 RUN npm install
+# Add this line to specifically install react-router-dom
+RUN npm install react-router-dom --save
 RUN npm install --force
 
 COPY ./ ./
 RUN npm run build
+
 FROM nginx:alpine
 RUN apk add --no-cache openssl
 

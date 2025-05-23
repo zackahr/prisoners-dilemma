@@ -1,0 +1,31 @@
+.game-timer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.timer-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid #2ecc71;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.timer-text {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2ecc71;
+}
+
+@keyframes countdown {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 283; /* 2 * PI * 45 */
+  }
+}

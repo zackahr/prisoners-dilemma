@@ -1,3 +1,4 @@
+# game_logic.py (No significant changes, but review for understanding)
 from .models import GameMatch, GameRound
 from django.utils import timezone
 
@@ -25,14 +26,17 @@ def update_game_stats(match_id):
     This includes updating cooperation percentages for both players.
     """
     game_match = GameMatch.objects.get(match_id=match_id)
-    rounds = game_match.rounds.all()
+    rounds = game_match.rounds.all().order_by('round_number') # Ensure ordered for correct 'last' round
     
     if not rounds.exists():
         return
     
-    # Update the current round with scores
+    # Update the current round with scores (if not already done)
+    # This part is somewhat redundant if calculate_round_results in consumer already does this.
+    # It's good to have as a fallback or for consistency.
     current_round = rounds.last()
-    if current_round.player_1_action and current_round.player_2_action:
+    if current_round.player_1_action and current_round.player_2_action and \
+       (current_round.player_1_score is None or current_round.player_2_score is None):
         player_1_payoff, player_2_payoff = calculate_payoff(
             current_round.player_1_action, 
             current_round.player_2_action
@@ -46,20 +50,25 @@ def update_game_stats(match_id):
     total_cooperation_1 = sum(1 for round in rounds if round.player_1_action == "Cooperate")
     total_cooperation_2 = sum(1 for round in rounds if round.player_2_action == "Cooperate")
     
-    player_1_cooperation_percent = (total_cooperation_1 / len(rounds)) * 100 if rounds else 0
-    player_2_cooperation_percent = (total_cooperation_2 / len(rounds)) * 100 if rounds else 0
+    # Only calculate based on completed rounds for accurate percentage
+    completed_rounds_count = sum(1 for round in rounds if round.player_1_action and round.player_2_action)
+
+    player_1_cooperation_percent = (total_cooperation_1 / completed_rounds_count) * 100 if completed_rounds_count else 0
+    player_2_cooperation_percent = (total_cooperation_2 / completed_rounds_count) * 100 if completed_rounds_count else 0
     avg_cooperation_percent = (player_1_cooperation_percent + player_2_cooperation_percent) / 2
     
     game_match.player_1_cooperation_percent = player_1_cooperation_percent
     game_match.player_2_cooperation_percent = player_2_cooperation_percent
     game_match.avg_cooperation_percent = avg_cooperation_percent
     
-    if len(rounds) >= 25 and all(r.player_1_action and r.player_2_action for r in rounds):
+    # Check for game completion after 25 rounds
+    if completed_rounds_count >= 25:
         game_match.is_complete = True
         game_match.completed_at = timezone.now()
         
-        player_1_total_score = sum(calculate_payoff(r.player_1_action, r.player_2_action)[0] for r in rounds)
-        player_2_total_score = sum(calculate_payoff(r.player_1_action, r.player_2_action)[1] for r in rounds)
+        # Recalculate total scores from all rounds
+        player_1_total_score = sum(r.player_1_score for r in rounds if r.player_1_score is not None)
+        player_2_total_score = sum(r.player_2_score for r in rounds if r.player_2_score is not None)
         
         game_match.player_1_final_score = player_1_total_score
         game_match.player_2_final_score = player_2_total_score
