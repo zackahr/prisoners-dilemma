@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 7e0c25c02b8f95ab60307668ff73dbb31f68d94d
 import { useEffect } from "react"
 import "./GameTimer.css"
 

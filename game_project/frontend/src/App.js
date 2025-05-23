@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 
+=======
+ 
+>>>>>>> 7e0c25c02b8f95ab60307668ff73dbb31f68d94d
 import { useState } from "react"
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
 import Header from "./components/Header"

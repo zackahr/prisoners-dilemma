@@ -25,7 +25,7 @@ def create_match(request):
             try:
                 game_match = GameMatch.objects.get(
                     game_mode='online',
-                    player_2_fingerprint__isnull=True, # Player 2 slot is empty
+                    player_2_fingerprint__isnull=True, 
                     is_complete=False
                 )
                 game_match.player_2_fingerprint = player_fingerprint
