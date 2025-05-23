@@ -1,4 +1,3 @@
-"use client"
 
 import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
@@ -40,7 +39,8 @@ function GameBoard({ playerFingerprint }) {
     }
 
     // Get the fingerprint from localStorage if not provided
-    const fingerprint = playerFingerprint || localStorage.getItem("playerFingerprint")
+    // const fingerprint = playerFingerprint || localStorage.getItem("playerFingerprint")
+    const fingerprint = playerFingerprint || localStorage.getItem("playerUUID")
     if (!fingerprint) {
       navigate("/")
       return
