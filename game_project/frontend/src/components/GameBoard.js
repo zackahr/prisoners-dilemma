@@ -247,14 +247,14 @@ function GameBoard({ playerFingerprint }) {
         <div className="waiting-screen">
           <div className="waiting-message">
             <h2>Waiting for another player to join...</h2>
-            <p>Share this match ID with your opponent:</p>
-            <div className="match-id-box">
+            {/* <p>Share this match ID with your opponent:</p> */}
+            {/* <div className="match-id-box">
               <code>{matchId}</code>
               <button className="copy-button" onClick={shareMatchId}>
                 Copy
               </button>
-            </div>
-            <p className="fingerprint-info">Your player ID: {myFingerprint}</p>
+            </div> */}
+            {/* <p className="fingerprint-info">Your player ID: {myFingerprint}</p> */}
           </div>
           <PayoffMatrix />
         </div>
