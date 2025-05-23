@@ -4,6 +4,7 @@ import json
 import uuid
 from .models import GameMatch
 from .fingerprint import get_fingerprint
+from django.shortcuts import get_object_or_404
 
 @csrf_exempt
 def create_match(request):
@@ -34,3 +35,14 @@ def create_match(request):
         })
     
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+def match_results(request, match_id):
+    match = get_object_or_404(GameMatch, match_id=match_id)
+
+    return JsonResponse({
+        "status": "success",
+        "player_1_score":          match.player_1_final_score,
+        "player_2_score":          match.player_2_final_score,
+        "player_1_cooperation":    round(match.player_1_cooperation_percent, 1),
+        "player_2_cooperation":    round(match.player_2_cooperation_percent, 1),
+    })

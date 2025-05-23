@@ -4,7 +4,7 @@ REDIS_SERVICE=redis
 BACKEND_SERVICE=backend
 FRONTEND_SERVICE=frontend
 NGINX_SERVICE=nginx
-MIGRATIONS_SCRIPT=./backend/run_migrations.sh
+MIGRATIONS_SCRIPT=/mnt/c/Users/marke/Documents/helooooo/game_project/backend/run_migrations.sh
 
 # Color definitions for pretty output
 RED=\033[0;31m

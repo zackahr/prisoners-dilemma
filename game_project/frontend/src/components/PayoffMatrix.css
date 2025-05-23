@@ -1,0 +1,55 @@
+.payoff-matrix {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+
+.payoff-matrix table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 2px solid #3498db;
+  background-color: white;
+}
+
+.payoff-matrix th,
+.payoff-matrix td {
+  padding: 12px 15px;
+  text-align: center;
+  border: 1px solid #ddd;
+}
+
+.payoff-matrix th {
+  background-color: #3498db;
+  color: white;
+  font-weight: 600;
+}
+
+.payoff-matrix .player-action {
+  font-weight: 600;
+  background-color: #f2f6f9;
+  color: #2c3e50;
+}
+
+.payoff-matrix .payoff {
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.payoff-reminder {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+  text-align: center;
+}
+
+.payoff-reminder h4 {
+  margin-bottom: 0.3rem;
+  color: #3498db;
+}
+
+@media (max-width: 768px) {
+  .payoff-matrix th,
+  .payoff-matrix td {
+    padding: 8px 10px;
+    font-size: 0.9rem;
+  }
+}

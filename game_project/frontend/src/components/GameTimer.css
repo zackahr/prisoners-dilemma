@@ -1,0 +1,22 @@
+.game-timer {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.timer-background {
+  stroke-opacity: 0.3;
+}
+
+.timer-progress {
+  transition: stroke-dashoffset 1s linear;
+}
+
+@keyframes countdown {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 283; /* 2 * PI * 45 */
+  }
+}

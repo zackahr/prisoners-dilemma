@@ -4,4 +4,5 @@ from django.views.generic import TemplateView
 
 urlpatterns = [
     path('create_match/', views.create_match, name='create_match'),
+    path('match/<str:match_id>/', views.match_results, name='match_results'),
 ]
