@@ -25,7 +25,7 @@ def create_match(request):
             try:
                 game_match = GameMatch.objects.get(
                     game_mode='online',
-                    player_2_fingerprint__isnull=True, # Player 2 slot is empty
+                    player_2_fingerprint__isnull=True, 
                     is_complete=False
                 )
                 game_match.player_2_fingerprint = player_fingerprint
@@ -50,7 +50,7 @@ def create_match(request):
                 print(f"Player {player_fingerprint} created new match {game_match.match_id}")
             
   
-            elif (game_match and 
+        elif (game_match and 
                   (game_match.player_1_fingerprint == player_fingerprint or 
                    game_match.player_2_fingerprint == player_fingerprint)):
                 status_message = 'rejoined_match'
