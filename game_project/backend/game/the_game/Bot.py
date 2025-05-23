@@ -1,14 +1,24 @@
 import random
 
+
 def make_bot_decision(player_history, bot_history):
     """
-    Make a decision for the bot based on the game history.
-    This implements a simple strategy called "Tit for Tat" where the bot
-    copies the player's previous move, but starts with cooperation.
+    Probabilistic Tit-for-Tat   (10 % pure random exploration)
+
+        • round 1 → Cooperate
+        • otherwise 10 % of the time choose randomly
+        • else behave like TFT but only 70 % ‘strict’
     """
-    # If this is the first round, cooperate
     if not player_history:
         return "Cooperate"
-    
-    # Otherwise, do what the player did in the previous round (Tit for Tat)
-    return player_history[-1]
+
+    # 10 % exploration
+    if random.random() < 0.10:
+        return random.choice(["Cooperate", "Defect"])
+
+    last_human = player_history[-1]
+
+    if last_human == "Defect":          # punish 70 % of the time
+        return "Defect" if random.random() < 0.70 else "Cooperate"
+    else:                               # reward 70 % of the time
+        return "Cooperate" if random.random() < 0.70 else "Defect"

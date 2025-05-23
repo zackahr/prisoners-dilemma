@@ -10,35 +10,6 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Generate a more unique fingerprint
-    // const generateFingerprint = () => {
-    //   const userAgent = navigator.userAgent
-    //   const language = navigator.language
-    //   const screenWidth = window.screen.width
-    //   const screenHeight = window.screen.height
-    //   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    //   const platform = navigator.platform
-    //   const cookieEnabled = navigator.cookieEnabled
-    //   const doNotTrack = navigator.doNotTrack
-    //   const timestamp = Date.now()
-    //   const randomComponent = Math.random().toString(36).substring(2, 15)
-
-    //   // Create a more unique fingerprint by combining multiple factors
-    //   const fingerprintData = `${userAgent}-${language}-${screenWidth}x${screenHeight}-${timezone}-${platform}-${cookieEnabled}-${doNotTrack}-${timestamp}-${randomComponent}`
-
-    //   // Create a hash and take first 12 characters
-    //   const hash = btoa(fingerprintData)
-    //     .replace(/[^a-zA-Z0-9]/g, "")
-    //     .substring(0, 12)
-
-    //   return hash
-    // }
-
-    // const fingerprint = generateFingerprint()
-    // setPlayerFingerprint(fingerprint)
-    // localStorage.setItem("playerFingerprint", fingerprint)
-    // console.log("Generated fingerprint:", fingerprint)
-     // ❶ simple UUID – reused if it already exists
     const getOrCreateUUID = () => {
         const stored = localStorage.getItem("playerUUID");
         if (stored) return stored;           // reuse
@@ -55,7 +26,6 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
   const startGame = async () => {
     setIsLoading(true)
     try {
-      // const playerFingerprint = localStorage.getItem("playerFingerprint")
       const playerFingerprint = localStorage.getItem("playerUUID")
       console.log("Starting game with fingerprint:", playerFingerprint)
 

@@ -37,9 +37,6 @@ function GameBoard({ playerFingerprint }) {
       navigate("/")
       return
     }
-
-    // Get the fingerprint from localStorage if not provided
-    // const fingerprint = playerFingerprint || localStorage.getItem("playerFingerprint")
     const fingerprint = playerFingerprint || localStorage.getItem("playerUUID")
     if (!fingerprint) {
       navigate("/")
@@ -77,7 +74,11 @@ function GameBoard({ playerFingerprint }) {
         console.log("Game state update:", data.game_state)
         updateGameState(data.game_state, fingerprint)
       }
-
+      if (data.game_aborted) {
+        alert(data.message);
+        navigate("/");          // back to landing page
+        return;                 // ignore the rest of this message
+      }
       // Handle individual player actions
       if (data.player_fingerprint && data.action) {
         console.log(`Player ${data.player_fingerprint} performed action: ${data.action}`)
@@ -101,6 +102,7 @@ function GameBoard({ playerFingerprint }) {
       if (data.error) {
         console.error("Error from server:", data.error)
         alert(data.error)
+        return;
       }
     }
 
@@ -130,55 +132,37 @@ function GameBoard({ playerFingerprint }) {
       ...newState,
     }))
 
-    // Determine if this client is player 1 or 2 based on the game state
-    // We need to check the backend's game state to see which player we are
-    if (newState.player1Fingerprint === fingerprint) {
-      setIsPlayer1(true)
-      console.log("I am Player 1")
-    } else if (newState.player2Fingerprint === fingerprint) {
-      setIsPlayer1(false)
-      console.log("I am Player 2")
-    }
-
-    // Check if we need to wait for this player's action
-    checkIfWaitingForMyAction(newState, fingerprint)
-
+     const iAmP1 = newState.player1Fingerprint === fingerprint;
+     setIsPlayer1(iAmP1);
+    
+     // derive role locally ➜ no race with React state
+     checkIfWaitingForMyAction(newState, iAmP1);
     // Reset timer if we're starting a new round
     if (!newState.waitingForOpponent && !newState.gameOver) {
       setTimeLeft(10)
       setCanMakeChoice(true)
     }
   }
-
-  // Check if we're waiting for this player's action
-  const checkIfWaitingForMyAction = (gameState, fingerprint) => {
-    if (gameState.waitingForOpponent || gameState.gameOver) {
-      setWaitingForMyAction(false)
-      return
+  const checkIfWaitingForMyAction = (state, iAmP1) => {
+    if (state.waitingForOpponent || state.gameOver) {
+      setWaitingForMyAction(false);
+      return;
     }
-
-    // Check if both players have made their moves for the current round
-    const currentRoundNumber = gameState.currentRound
-    const currentRoundData = gameState.roundHistory.find((r) => r.roundNumber === currentRoundNumber)
-
-    if (!currentRoundData) {
-      // New round - this player needs to act
-      setWaitingForMyAction(true)
-      console.log("New round - waiting for my action")
+  
+    const round = state.roundHistory.find(r => r.roundNumber === state.currentRound);
+  
+    // if (isPlayer1) {
+      if (iAmP1) {
+      // player 1 moves first each round
+      setWaitingForMyAction(!round || !round.player1Action);
     } else {
-      // Check if this player has already acted in the current round
-      const isPlayer1 = gameState.player1Fingerprint === fingerprint
-      const hasActed = isPlayer1 ? currentRoundData.player1Action : currentRoundData.player2Action
-
-      if (!hasActed) {
-        setWaitingForMyAction(true)
-        console.log("I haven't acted yet in this round")
-      } else {
-        setWaitingForMyAction(false)
-        console.log("I have already acted in this round")
-      }
+      // player 2 waits until P1 has chosen, then moves
+      setWaitingForMyAction(
+        round && round.player1Action && !round.player2Action
+      );
     }
-  }
+  };
+
 
   // Handle player actions
   const handlePlayerAction = (actionPlayerFingerprint, action, myFingerprint) => {
@@ -194,6 +178,9 @@ function GameBoard({ playerFingerprint }) {
     // If this is the opponent's action, update UI accordingly
     if (actionPlayerFingerprint !== myFingerprint) {
       console.log("Opponent's action processed")
+        // opponent (P1) just moved → my turn now
+        setWaitingForMyAction(true);
+        setCanMakeChoice(true);
       // The game state update will handle resetting for the next round
     }
   }
@@ -247,14 +234,6 @@ function GameBoard({ playerFingerprint }) {
         <div className="waiting-screen">
           <div className="waiting-message">
             <h2>Waiting for another player to join...</h2>
-            {/* <p>Share this match ID with your opponent:</p> */}
-            {/* <div className="match-id-box">
-              <code>{matchId}</code>
-              <button className="copy-button" onClick={shareMatchId}>
-                Copy
-              </button>
-            </div> */}
-            {/* <p className="fingerprint-info">Your player ID: {myFingerprint}</p> */}
           </div>
           <PayoffMatrix />
         </div>
