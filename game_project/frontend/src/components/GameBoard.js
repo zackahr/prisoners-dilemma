@@ -291,16 +291,16 @@ const checkIfWaitingForMyAction = (state, iAmP1) => {
             <div className="score-box">
               <h3>Your Score</h3>
               <p>{isPlayer1 ? gameState.player1Score : gameState.player2Score}</p>
-              <p className="cooperation-rate">
+              {/* <p className="cooperation-rate">
                 Cooperation: {isPlayer1 ? gameState.player1CooperationPercent : gameState.player2CooperationPercent}%
-              </p>
+              </p> */}
             </div>
             <div className="score-box">
               <h3>Opponent's Score</h3>
               <p>{isPlayer1 ? gameState.player2Score : gameState.player1Score}</p>
-              <p className="cooperation-rate">
+              {/* <p className="cooperation-rate">
                 Cooperation: {isPlayer1 ? gameState.player2CooperationPercent : gameState.player1CooperationPercent}%
-              </p>
+              </p> */}
             </div>
           </div>
           <button className="play-again-button" onClick={() => navigate("/")}>
