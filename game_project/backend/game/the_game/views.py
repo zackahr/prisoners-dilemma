@@ -25,9 +25,16 @@ def create_match(request):
             try:
                 game_match = GameMatch.objects.get(
                     game_mode='online',
-                    player_2_fingerprint__isnull=True, # Player 2 slot is empty
+                    player_2_fingerprint__isnull=True, 
                     is_complete=False
                 )
+                # ── REFUSE if the same browser tries to occupy both seats ──────────
+                if game_match.player_1_fingerprint == player_fingerprint:
+                    return JsonResponse(
+                        {"status": "error",
+                        "message": "You are already registered in this match."},
+                        status=400
+                    )
                 game_match.player_2_fingerprint = player_fingerprint
                 game_match.player_2_ip = ip_address
                 game_match.player_2_country = 'Unknown' # Placeholder

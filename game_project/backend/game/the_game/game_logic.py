@@ -1,24 +1,19 @@
 # game_logic.py (No significant changes, but review for understanding)
 from .models import GameMatch, GameRound
 from django.utils import timezone
+CODE_MAP = {"Cooperate": "C", "Defect": "D", "C": "Cooperate", "D": "Defect"}
 
-def calculate_payoff(player_1_action, player_2_action):
-    """
-    Calculate the payoff for a given round based on the actions of both players.
-    
-    Returns:
-        tuple: (player_1_payoff, player_2_payoff)
-    """
-    if player_1_action == "Cooperate" and player_2_action == "Cooperate":
-        return 20, 20
-    elif player_1_action == "Cooperate" and player_2_action == "Defect":
-        return 0, 30
-    elif player_1_action == "Defect" and player_2_action == "Cooperate":
-        return 30, 0
-    elif player_1_action == "Defect" and player_2_action == "Defect":
-        return 10, 10
-    else:
-        return 0, 0  # Default case if actions are invalid
+def calculate_payoff(a1, a2):
+    """Return pay-offs for any spelling (C/D or full word)."""
+    a1 = CODE_MAP.get(a1, a1)
+    a2 = CODE_MAP.get(a2, a2)
+
+    if a1 == "C" and a2 == "C": return 20, 20
+    if a1 == "C" and a2 == "D": return 0, 30
+    if a1 == "D" and a2 == "C": return 30, 0
+    if a1 == "D" and a2 == "D": return 10, 10
+    return 0, 0
+
 
 def update_game_stats(match_id):
     """
@@ -47,8 +42,8 @@ def update_game_stats(match_id):
         current_round.save()
     
     # Update cooperation percentages
-    total_cooperation_1 = sum(1 for round in rounds if round.player_1_action == "Cooperate")
-    total_cooperation_2 = sum(1 for round in rounds if round.player_2_action == "Cooperate")
+    total_cooperation_1 = sum(1 for round in rounds if round.player_1_action == "C")
+    total_cooperation_2 = sum(1 for round in rounds if round.player_2_action == "C")
     
     # Only calculate based on completed rounds for accurate percentage
     completed_rounds_count = sum(1 for round in rounds if round.player_1_action and round.player_2_action)

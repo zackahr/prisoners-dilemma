@@ -13,6 +13,10 @@ from .game_logic import calculate_payoff, update_game_stats
 
 logger = logging.getLogger(__name__)
 
+CODE_MAP = {
+    "Cooperate": "C", "Defect": "D",
+    "C": "Cooperate", "D": "Defect",
+}
 
 class GameConsumer(AsyncWebsocketConsumer):
 
@@ -158,6 +162,7 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def handle_join(self, fp):
+        # db_action = CODE_MAP.get(action, action)
         if self.game_match.is_complete:
             return False
 
@@ -170,8 +175,12 @@ class GameConsumer(AsyncWebsocketConsumer):
             return True
 
         if self.game_match.game_mode == "online":
+            # if self.game_match.player_2_fingerprint in (None, fp):
+            #     if fp == self.game_match.player_1_fingerprint:
+            #         return False
             if self.game_match.player_2_fingerprint in (None, fp):
                 if fp == self.game_match.player_1_fingerprint:
+                    # same fingerprint – reject
                     return False
                 self.game_match.player_2_fingerprint = fp
                 self.game_match.save()
@@ -186,6 +195,7 @@ class GameConsumer(AsyncWebsocketConsumer):
     # ─────────────────────────────────────────────────────────
     @database_sync_to_async
     def process_action(self, fp, action) -> bool:
+        db_action = CODE_MAP.get(action, action)
         """
         Store the first valid click.
         Enforces that **player-1 must move before player-2** every round.
@@ -210,14 +220,16 @@ class GameConsumer(AsyncWebsocketConsumer):
         wrote = False
         if fp == self.game_match.player_1_fingerprint:
             if rnd.player_1_action is None:                # P1 can always act first
-                rnd.player_1_action = action
+                # rnd.player_1_action = action
+                rnd.player_1_action = db_action
                 wrote = True
 
         elif fp == self.game_match.player_2_fingerprint:
             if rnd.player_1_action is None:                # P2 clicked too early
                 return False
             if rnd.player_2_action is None:
-                rnd.player_2_action = action
+                # rnd.player_2_action = action
+                rnd.player_2_action = db_action
                 wrote = True
 
         rnd.save()
@@ -251,8 +263,10 @@ class GameConsumer(AsyncWebsocketConsumer):
                 p2 += r.player_2_score
                 history.append({
                     "roundNumber":  r.round_number,
-                    "player1Action": r.player_1_action,
-                    "player2Action": r.player_2_action,
+                    # "player1Action": r.player_1_action,
+                    # "player2Action": r.player_2_action,
+                   "player1Action": CODE_MAP[r.player_1_action],
+                   "player2Action": CODE_MAP[r.player_2_action],
                     "player1Points": r.player_1_score,
                     "player2Points": r.player_2_score,
                 })
@@ -267,6 +281,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                     and self.game_match.game_mode == "online"
 
         last = rounds.last()
+
         return {
             "currentRound":              min(next_rnd, 25),
             "maxRounds":                 25,
@@ -277,11 +292,13 @@ class GameConsumer(AsyncWebsocketConsumer):
             "roundHistory":              history,
             "waitingForOpponent":        waiting,
             "gameOver":                  game_over,
-            "player1LastAction":         last.player_1_action if last else None,
-            "player2LastAction":         last.player_2_action if last else None,
+            # "player1LastAction":         last.player_1_action if last else None,
+            # "player2LastAction":         last.player_2_action if last else None,
             "gameMode":                  self.game_match.game_mode,
             "player1Fingerprint":        self.game_match.player_1_fingerprint,
             "player2Fingerprint":        self.game_match.player_2_fingerprint,
+            "player1LastAction": CODE_MAP[last.player_1_action] if last else None,
+            "player2LastAction": CODE_MAP[last.player_2_action] if last else None,
         }
 
     @database_sync_to_async
