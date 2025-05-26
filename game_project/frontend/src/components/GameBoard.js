@@ -4,6 +4,7 @@ import PayoffMatrix from "./PayoffMatrix"
 import RoundHistory from "./RoundHistory"
 import GameTimer from "./GameTimer"
 import "./GameBoard.css"
+import Modal from "./Modal";
 
 function GameBoard({ playerFingerprint }) {
   const { matchId } = useParams()
@@ -29,6 +30,7 @@ function GameBoard({ playerFingerprint }) {
   const [waitingForMyAction, setWaitingForMyAction] = useState(false)
   const [myFingerprint, setMyFingerprint] = useState("")
   const socketRef = useRef(null)
+  const [modal, setModal] = useState({open:false, title:"", msg:""});
 
   // Connect to WebSocket
   useEffect(() => {
@@ -74,9 +76,15 @@ function GameBoard({ playerFingerprint }) {
         updateGameState(data.game_state, fingerprint)
       }
       if (data.game_aborted) {
-        alert(data.message);
-        navigate("/");          // back to landing page
-        return;                 // ignore the rest of this message
+        // alert(data.message);
+        // navigate("/");          // back to landing page
+        // return;                 // ignore the rest of this message
+        setModal({
+            open: true,
+            title: "Match aborted",
+            msg: data.message         // comes from the server
+          });
+          return;                     // keep socket open until user clicks OK
       }
       // Handle individual player actions
       if (data.player_fingerprint && data.action) {
@@ -108,6 +116,7 @@ function GameBoard({ playerFingerprint }) {
     socket.onclose = () => {
       console.log("WebSocket disconnected")
       setConnected(false)
+      
     }
 
     socket.onerror = (error) => {
@@ -126,43 +135,82 @@ function GameBoard({ playerFingerprint }) {
     console.log("Updating game state with fingerprint:", fingerprint)
     console.log("New state:", newState)
 
-    setGameState((prevState) => ({
-      ...prevState,
-      ...newState,
-    }))
-
-     const iAmP1 = newState.player1Fingerprint === fingerprint;
-     setIsPlayer1(iAmP1);
+    // setGameState((prevState) => ({
+    //   ...prevState,
+    //   ...newState,
+    // }))
+    setGameState(prev => {
+        const merged = { ...prev, ...newState };
+        const iAmP1  = merged.player1Fingerprint === fingerprint;
     
-     // derive role locally ➜ no race with React state
-     checkIfWaitingForMyAction(newState, iAmP1);
+        setIsPlayer1(iAmP1);
+        checkIfWaitingForMyAction(merged, iAmP1);
+        if (
+          merged.currentRound !== prev.currentRound &&   // ✅ changed
+          !merged.waitingForOpponent &&
+          !merged.gameOver
+        ) {
+          setTimeLeft(10);
+          setCanMakeChoice(true);
+        }
+        return merged;
+      });
+    //  const iAmP1 = newState.player1Fingerprint === fingerprint;
+    //  setIsPlayer1(iAmP1);
+    
+    //  // derive role locally ➜ no race with React state
+    //  checkIfWaitingForMyAction(newState, iAmP1);
     // Reset timer if we're starting a new round
     if (!newState.waitingForOpponent && !newState.gameOver) {
       setTimeLeft(10)
       setCanMakeChoice(true)
     }
   }
-  const checkIfWaitingForMyAction = (state, iAmP1) => {
+  // const checkIfWaitingForMyAction = (state, iAmP1) => {
+  //   if (state.waitingForOpponent || state.gameOver) {
+  //     setWaitingForMyAction(false);
+  //     return;
+  //   }
+  
+    // const round = state.roundHistory.find(r => r.roundNumber === state.currentRound);
+  
+    // if (isPlayer1) {
+    //   if (iAmP1) {
+    //   // player 1 moves first each round
+    //   setWaitingForMyAction(!round || !round.player1Action);
+    // } else {
+    //   // player 2 waits until P1 has chosen, then moves
+    //   setWaitingForMyAction(
+    //     round && round.player1Action && !round.player2Action
+    //   );
+    // }
+  // };
+
+const checkIfWaitingForMyAction = (state, iAmP1) => {
     if (state.waitingForOpponent || state.gameOver) {
       setWaitingForMyAction(false);
       return;
     }
+    const thisRound = state.roundHistory.find(
+      r => r.roundNumber === state.currentRound
+    );
   
-    const round = state.roundHistory.find(r => r.roundNumber === state.currentRound);
-  
-    // if (isPlayer1) {
-      if (iAmP1) {
-      // player 1 moves first each round
-      setWaitingForMyAction(!round || !round.player1Action);
+    if (!thisRound) {
+      // nobody has acted yet
+      setWaitingForMyAction(true);
+    } else if (iAmP1) {
+      setWaitingForMyAction(thisRound.player1Action == null);
     } else {
-      // player 2 waits until P1 has chosen, then moves
-      setWaitingForMyAction(
-        round && round.player1Action && !round.player2Action
-      );
+      setWaitingForMyAction(thisRound.player2Action == null);
     }
+    /* lastAction fields are sent by the server even for an *unfinished*
+       round, therefore they are reliable for “have I already clicked?” */
+    // const myLast  = iAmP1 ? state.player1LastAction : state.player2LastAction;
+    // setWaitingForMyAction(myLast === null);
+         // fall back to “not found” when we are in round 1 and nobody has acted
+     const myLast = iAmP1 ? state.player1LastAction : state.player2LastAction;
+     setWaitingForMyAction(myLast == null);        // catches undefined **or** null
   };
-
-
   // Handle player actions
   const handlePlayerAction = (actionPlayerFingerprint, action, myFingerprint) => {
     console.log(`Action from ${actionPlayerFingerprint}, my fingerprint: ${myFingerprint}`)
@@ -175,13 +223,13 @@ function GameBoard({ playerFingerprint }) {
     }
 
     // If this is the opponent's action, update UI accordingly
-    if (actionPlayerFingerprint !== myFingerprint) {
-      console.log("Opponent's action processed")
-        // opponent (P1) just moved → my turn now
-        setWaitingForMyAction(true);
-        setCanMakeChoice(true);
-      // The game state update will handle resetting for the next round
-    }
+    // if (actionPlayerFingerprint !== myFingerprint) {
+    //   console.log("Opponent's action processed")
+    //     // opponent (P1) just moved → my turn now
+    //     setWaitingForMyAction(true);
+    //     setCanMakeChoice(true);
+    //   // The game state update will handle resetting for the next round
+    // }
   }
 
   // Make a choice (Cooperate or Defect)
@@ -381,6 +429,15 @@ function GameBoard({ playerFingerprint }) {
           </div>
         </div>
       )}
+      <Modal
+        open={modal.open}
+        title={modal.title}
+        message={modal.msg}
+        onClose={() => {
+          setModal({open:false});   // hide dialog
+          navigate("/");            // back to landing page
+        }}
+      />
     </div>
   )
 }

@@ -43,6 +43,14 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
       const data = await response.json()
       console.log("Server response:", data)
 
+      // if (data.status && data.status.includes("match")) {
+      if (data.status === "error") {
+        // show nice pop-up instead of alert
+        window.dispatchEvent(new CustomEvent("GLOBAL_MODAL", {
+           detail: {title:"Hold on!", msg: data.message}
+        }));
+        return;
+      }
       if (data.status && data.status.includes("match")) {
         setMatchId(data.match_id)
         // Navigate to the game board
@@ -53,7 +61,10 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
       }
     } catch (error) {
       console.error("Error starting game:", error)
-      alert("Failed to connect to server. Please try again.")
+      // alert("Failed to connect to server. Please try again."
+      window.dispatchEvent(new CustomEvent("GLOBAL_MODAL", {
+            detail:{title:"Network problem", msg:"Could not reach the server."}
+        }));
     } finally {
       setIsLoading(false)
     }

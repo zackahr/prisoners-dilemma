@@ -1,0 +1,46 @@
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.65);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+  }
+  
+  .modal-window {
+    width: min(90%, 420px);
+    background: #ecf0f1;
+    color: #2c3e50;
+    border-radius: 8px;
+    padding: 32px 24px;
+    box-shadow: 0 8px 18px rgba(0,0,0,.35);
+    text-align: center;
+    animation: pop .25s ease-out;
+  }
+  
+  @keyframes pop {
+    from { transform: scale(.8); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  
+  .modal-actions {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+  }
+  
+  .modal-btn {
+    padding: 10px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+    font-weight: 600;
+  }
+  
+  .modal-btn.primary {
+    background: #3498db;
+    color: #fff;
+  }
+  
