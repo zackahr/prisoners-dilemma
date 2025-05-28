@@ -1,0 +1,2078 @@
+this is GamePage.css:
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+.game-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 25%, #10b981 50%, #3b82f6 75%, #6366f1 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  padding: 2rem 1rem;
+  font-family: "Inter", sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.game-page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.game-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.game-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  animation: fadeInDown 1s ease-out;
+}
+
+.game-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 1rem;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.game-subtitle {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 400;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.game-board {
+  display: flex;
+  justify-content: center;
+  animation: fadeInUp 1s ease-out 0.3s both;
+}
+
+.game-card {
+  width: 100%;
+  max-width: 32rem;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 35px 80px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  position: relative;
+}
+
+.game-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981, #f59e0b, #ef4444);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%,
+  100% {
+    background-position: 200% 0;
+  }
+  50% {
+    background-position: -200% 0;
+  }
+}
+
+.game-card-header {
+  text-align: center;
+  position: relative;
+  padding: 2rem 2rem 1rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+}
+
+.timer {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.timer-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #3b82f6;
+}
+
+.phase-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.game-card-content {
+  text-align: center;
+  padding: 1.5rem 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.money-display {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: 0 20px 40px -10px rgba(251, 191, 36, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+  position: relative;
+  overflow: hidden;
+}
+
+.money-display::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  animation: shine 3s ease-in-out infinite;
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
+}
+
+.money-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #1f2937;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.money-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.offer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.offer-label {
+  color: #374151;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.offer-input-container {
+  position: relative;
+}
+
+.offer-input {
+  width: 100%;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  height: 4rem;
+  border: 3px solid #e5e7eb;
+  border-radius: 1rem;
+  outline: none;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  color: #1f2937;
+}
+
+.offer-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1), 0 10px 25px -5px rgba(59, 130, 246, 0.2);
+  transform: translateY(-2px);
+}
+
+.dollar-sign {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.submit-button {
+  width: 100%;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  font-weight: 700;
+  padding: 1.25rem;
+  font-size: 1.25rem;
+  border-radius: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 15px 35px -5px rgba(239, 68, 68, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.submit-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.submit-button:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.submit-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 20px 45px -5px rgba(239, 68, 68, 0.5);
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 5px 15px -3px rgba(0, 0, 0, 0.2);
+}
+
+.waiting-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.waiting-animation {
+  animation: pulse 2s infinite;
+}
+
+.waiting-spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  margin: 0 auto 1.5rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.waiting-text {
+  color: #4b5563;
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.offer-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  padding: 1rem 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #d1d5db;
+}
+
+.responding-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.opponent-offer {
+  color: #374151;
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+.opponent-amount {
+  font-weight: 800;
+  font-size: 2rem;
+  color: #1f2937;
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.keep-amount {
+  font-size: 1rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.response-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.accept-button {
+  width: 100%;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  font-weight: 700;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
+}
+
+.accept-button:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px -5px rgba(16, 185, 129, 0.5);
+}
+
+.reject-button {
+  width: 100%;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  font-weight: 700;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.4);
+}
+
+.reject-button:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px -5px rgba(239, 68, 68, 0.5);
+}
+
+/* Game Over Styles */
+.game-over-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 25%, #10b981 50%, #3b82f6 75%, #6366f1 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  font-family: "Inter", sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.game-over-page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.game-over-container {
+  width: 100%;
+  max-width: 48rem;
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 1s ease-out;
+}
+
+.game-over-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.game-over-title {
+  font-size: 3rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 1rem;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  letter-spacing: -0.02em;
+}
+
+.result-card {
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 2rem;
+  box-shadow: 0 35px 80px -15px rgba(0, 0, 0, 0.4);
+  margin-bottom: 2rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.result-header {
+  text-align: center;
+  padding: 2.5rem 2rem 1.5rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+}
+
+.result-icon-container {
+  margin: 0 auto 1.5rem;
+  padding: 1.5rem;
+  border-radius: 50%;
+  width: 6rem;
+  height: 6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.2);
+}
+
+.result-icon-accepted {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+}
+
+.result-icon-rejected {
+  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+}
+
+.result-icon {
+  width: 3rem;
+  height: 3rem;
+}
+
+.result-icon-green {
+  color: #16a34a;
+}
+
+.result-icon-red {
+  color: #dc2626;
+}
+
+.result-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.result-title-accepted {
+  color: #16a34a;
+}
+
+.result-title-rejected {
+  color: #dc2626;
+}
+
+.result-content {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.game-summary {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  border: 1px solid #e2e8f0;
+}
+
+.summary-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.summary-item {
+  text-align: center;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.summary-amount {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.summary-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.earnings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.earnings-card {
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  text-align: center;
+  border: 2px solid;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.earnings-card-accepted-player {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #bbf7d0;
+}
+
+.earnings-card-accepted-opponent {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-color: #bfdbfe;
+}
+
+.earnings-card-rejected {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-color: #fecaca;
+}
+
+.earnings-icons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  gap: 0.5rem;
+}
+
+.earnings-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.earnings-icon-green {
+  color: #16a34a;
+}
+
+.earnings-icon-blue {
+  color: #2563eb;
+}
+
+.earnings-icon-red {
+  color: #dc2626;
+}
+
+.earnings-amount {
+  font-size: 2.25rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.earnings-amount-green {
+  color: #16a34a;
+}
+
+.earnings-amount-blue {
+  color: #2563eb;
+}
+
+.earnings-amount-red {
+  color: #dc2626;
+}
+
+.earnings-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.result-message {
+  text-align: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.result-message-text {
+  color: #374151;
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.play-again-button {
+  flex: 1;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  font-weight: 700;
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
+}
+
+.play-again-button:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px -5px rgba(37, 99, 235, 0.5);
+}
+
+.menu-button {
+  flex: 1;
+  border: 2px solid #d1d5db;
+  color: #374151;
+  font-weight: 700;
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.menu-button:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.strategy-tip {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.2);
+}
+
+.strategy-tip-text {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 1rem;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-title {
+    font-size: 2.5rem;
+  }
+
+  .game-subtitle {
+    font-size: 1rem;
+  }
+
+  .game-over-title {
+    font-size: 2rem;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .earnings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .game-card-content {
+    padding: 1rem 1.5rem 1.5rem;
+  }
+
+  .result-content {
+    padding: 1.5rem;
+  }
+}
+and this is GamePage.jsx:
+"use client"
+
+import { useState, useEffect, useCallback } from "react"
+import { Clock, DollarSign, CheckCircle, XCircle, TrendingUp, TrendingDown } from "lucide-react"
+import { useNavigate, useSearchParams } from "react-router-dom"
+import "./GamePage.css"
+
+export default function GamePage() {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const gameMode = searchParams.get("mode") || "online"
+
+  const [gameState, setGameState] = useState({
+    phase: "proposing",
+    totalAmount: 100,
+    offer: 0,
+    timeLeft: 30,
+    isProposer: true,
+    opponentOffer: null,
+    gameResult: null,
+    playerRole: "proposer",
+  })
+
+  const [inputOffer, setInputOffer] = useState("")
+
+  // Timer effect
+  useEffect(() => {
+    if (gameState.timeLeft > 0 && (gameState.phase === "proposing" || gameState.phase === "responding")) {
+      const timer = setTimeout(() => {
+        setGameState((prev) => ({ ...prev, timeLeft: prev.timeLeft - 1 }))
+      }, 1000)
+      return () => clearTimeout(timer)
+    } else if (gameState.timeLeft === 0) {
+      if (gameState.phase === "proposing") {
+        handleSubmitOffer()
+      } else if (gameState.phase === "responding") {
+        handleResponse(false)
+      }
+    }
+  }, [gameState.timeLeft, gameState.phase])
+
+  const handleSubmitOffer = useCallback(() => {
+    const offer = Number.parseInt(inputOffer) || 0
+    if (offer < 0 || offer > gameState.totalAmount) return
+
+    setGameState((prev) => ({
+      ...prev,
+      offer,
+      phase: "waiting",
+      timeLeft: 15,
+    }))
+
+    setTimeout(() => {
+      if (gameMode === "bot") {
+        const accepted = offer >= gameState.totalAmount * 0.3
+        setGameState((prev) => ({
+          ...prev,
+          phase: "result",
+          gameResult: accepted ? "accepted" : "rejected",
+        }))
+      } else {
+        setGameState((prev) => ({
+          ...prev,
+          phase: "responding",
+          playerRole: "responder",
+          opponentOffer: offer,
+          timeLeft: 30,
+        }))
+      }
+    }, 3000)
+  }, [inputOffer, gameState.totalAmount, gameMode])
+
+  const handleResponse = (accepted) => {
+    setGameState((prev) => ({
+      ...prev,
+      phase: "result",
+      gameResult: accepted ? "accepted" : "rejected",
+    }))
+  }
+
+  const handlePlayAgain = () => {
+    if (gameMode === "bot") {
+      setGameState({
+        phase: "proposing",
+        totalAmount: 100,
+        offer: 0,
+        timeLeft: 30,
+        isProposer: true,
+        playerRole: "proposer",
+        opponentOffer: null,
+        gameResult: null,
+      })
+      setInputOffer("")
+    } else {
+      navigate("/ultimatum/matchmaking")
+    }
+  }
+
+  const handleBackToMenu = () => {
+    navigate("/ultimatum")
+  }
+
+  const isAccepted = gameState.gameResult === "accepted"
+
+  if (gameState.phase === "result") {
+    return (
+      <div className="game-over-page">
+        <div className="game-over-container">
+          <div className="game-over-header">
+            <h1 className="game-over-title">Game Over</h1>
+          </div>
+
+          <div className="result-card">
+            <div className="result-header">
+              <div className={`result-icon-container ${isAccepted ? "result-icon-accepted" : "result-icon-rejected"}`}>
+                {isAccepted ? (
+                  <CheckCircle className="result-icon result-icon-green" />
+                ) : (
+                  <XCircle className="result-icon result-icon-red" />
+                )}
+              </div>
+              <h2 className={`result-title ${isAccepted ? "result-title-accepted" : "result-title-rejected"}`}>
+                {isAccepted ? "Offer Accepted!" : "Offer Rejected!"}
+              </h2>
+            </div>
+            <div className="result-content">
+              <div className="game-summary">
+                <h3 className="summary-title">Game Summary</h3>
+                <div className="summary-grid">
+                  <div className="summary-item">
+                    <div className="summary-amount">${gameState.offer}</div>
+                    <div className="summary-label">Your Offer</div>
+                  </div>
+                  <div className="summary-item">
+                    <div className="summary-amount">${gameState.totalAmount - gameState.offer}</div>
+                    <div className="summary-label">You Kept</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="earnings-grid">
+                <div
+                  className={`earnings-card ${isAccepted ? "earnings-card-accepted-player" : "earnings-card-rejected"}`}
+                >
+                  <div className="earnings-icons">
+                    <DollarSign
+                      className={`earnings-icon ${isAccepted ? "earnings-icon-green" : "earnings-icon-red"}`}
+                    />
+                    {isAccepted ? (
+                      <TrendingUp className="earnings-icon earnings-icon-green" />
+                    ) : (
+                      <TrendingDown className="earnings-icon earnings-icon-red" />
+                    )}
+                  </div>
+                  <div className={`earnings-amount ${isAccepted ? "earnings-amount-green" : "earnings-amount-red"}`}>
+                    $
+                    {isAccepted
+                      ? gameState.playerRole === "proposer"
+                        ? gameState.totalAmount - gameState.offer
+                        : gameState.offer
+                      : 0}
+                  </div>
+                  <div className="earnings-label">Your Earnings</div>
+                </div>
+
+                <div
+                  className={`earnings-card ${isAccepted ? "earnings-card-accepted-opponent" : "earnings-card-rejected"}`}
+                >
+                  <div className="earnings-icons">
+                    <DollarSign
+                      className={`earnings-icon ${isAccepted ? "earnings-icon-blue" : "earnings-icon-red"}`}
+                    />
+                    {isAccepted ? (
+                      <TrendingUp className="earnings-icon earnings-icon-blue" />
+                    ) : (
+                      <TrendingDown className="earnings-icon earnings-icon-red" />
+                    )}
+                  </div>
+                  <div className={`earnings-amount ${isAccepted ? "earnings-amount-blue" : "earnings-amount-red"}`}>
+                    $
+                    {isAccepted
+                      ? gameState.playerRole === "proposer"
+                        ? gameState.offer
+                        : gameState.totalAmount - gameState.offer
+                      : 0}
+                  </div>
+                  <div className="earnings-label">{gameMode === "online" ? "Opponent" : "Bot"} Earnings</div>
+                </div>
+              </div>
+
+              <div className="result-message">
+                <p className="result-message-text">
+                  {isAccepted ? (
+                    <>
+                      Great! Your opponent accepted your offer of <strong>${gameState.offer}</strong>. You both earned
+                      money from this negotiation.
+                    </>
+                  ) : (
+                    <>
+                      Your opponent rejected your offer of <strong>${gameState.offer}</strong>. Unfortunately, neither
+                      of you earned anything this round.
+                    </>
+                  )}
+                </p>
+              </div>
+
+              <div className="action-buttons">
+                <button onClick={handlePlayAgain} className="play-again-button">
+                  Play Again
+                </button>
+                <button onClick={handleBackToMenu} className="menu-button">
+                  Main Menu
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="strategy-tip">
+            <p className="strategy-tip-text">
+              <strong>Strategy Tip:</strong> Most players accept offers of 30% or more. Consider the psychology of
+              fairness in your next game!
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="game-page">
+      <div className="game-container">
+        <div className="game-header">
+          <h1 className="game-title">Ultimatum</h1>
+          <p className="game-subtitle">
+            You and a player are dividing a stack of coins. If the other player rejects your proposal, you both get
+            nothing. How much will you offer?
+          </p>
+        </div>
+
+        <div className="game-board">
+          <div className="game-card">
+            <div className="game-card-header">
+              <div className="timer">
+                <Clock className="timer-icon" />
+                <span>{gameState.timeLeft}s</span>
+              </div>
+              <h2 className="phase-title">
+                {gameState.phase === "proposing"
+                  ? "YOU"
+                  : gameState.phase === "waiting"
+                    ? "WAITING..."
+                    : gameState.phase === "responding"
+                      ? "RESPOND"
+                      : "RESULT"}
+              </h2>
+            </div>
+
+            <div className="game-card-content">
+              <div className="money-display">
+                <div className="money-content">
+                  <DollarSign className="money-icon" />
+                  <span>{gameState.totalAmount}</span>
+                </div>
+              </div>
+
+              {gameState.phase === "proposing" && (
+                <div className="offer-section">
+                  <p className="offer-label">How much will you offer?</p>
+                  <div className="offer-input-container">
+                    <input
+                      type="number"
+                      value={inputOffer}
+                      onChange={(e) => setInputOffer(e.target.value)}
+                      placeholder="0"
+                      min="0"
+                      max={gameState.totalAmount}
+                      className="offer-input"
+                    />
+                    <div className="dollar-sign">$</div>
+                  </div>
+                  <button
+                    onClick={handleSubmitOffer}
+                    disabled={
+                      !inputOffer ||
+                      Number.parseInt(inputOffer) < 0 ||
+                      Number.parseInt(inputOffer) > gameState.totalAmount
+                    }
+                    className="submit-button"
+                  >
+                    SUBMIT OFFER
+                  </button>
+                </div>
+              )}
+
+              {gameState.phase === "waiting" && (
+                <div className="waiting-section">
+                  <div className="waiting-animation">
+                    <div className="waiting-spinner"></div>
+                    <p className="waiting-text">{"Waiting for opponent's response..."}</p>
+                  </div>
+                  <p className="offer-amount">Your offer: ${gameState.offer}</p>
+                </div>
+              )}
+
+              {gameState.phase === "responding" && (
+                <div className="responding-section">
+                  <p className="opponent-offer">
+                    Your opponent offers you <span className="opponent-amount">${gameState.opponentOffer}</span>
+                  </p>
+                  <p className="keep-amount">
+                    You would keep: ${gameState.totalAmount - (gameState.opponentOffer || 0)}
+                  </p>
+                  <div className="response-buttons">
+                    <button onClick={() => handleResponse(true)} className="accept-button">
+                      ACCEPT
+                    </button>
+                    <button onClick={() => handleResponse(false)} className="reject-button">
+                      REJECT
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+and this is HomaePage.css:
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+.homepage {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 25%, #10b981 50%, #3b82f6 75%, #6366f1 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  padding: 2rem 1rem;
+  font-family: "Inter", sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.homepage::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.homepage-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.homepage-header {
+  text-align: center;
+  margin-bottom: 4rem;
+  animation: fadeInUp 1s ease-out;
+}
+
+.homepage-title {
+  font-size: 5rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 1.5rem;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.homepage-subtitle {
+  font-size: 1.375rem;
+  color: rgba(255, 255, 255, 0.95);
+  max-width: 48rem;
+  margin: 0 auto;
+  line-height: 1.7;
+  font-weight: 400;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.how-to-play-card {
+  margin-bottom: 3rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 1.5rem;
+  padding: 2.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  animation: fadeInUp 1s ease-out 0.2s both;
+}
+
+.how-to-play-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  color: white;
+}
+
+.how-to-play-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.how-to-play-icon {
+  width: 2rem;
+  height: 2rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.how-to-play-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.step {
+  text-align: center;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.3s ease;
+}
+
+.step:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.3);
+}
+
+.step-number {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-radius: 50%;
+  width: 4rem;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);
+}
+
+.step-title {
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  font-size: 1.125rem;
+  letter-spacing: -0.01em;
+}
+
+.step-description {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+.game-modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+}
+
+.game-mode-card {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 1.5rem;
+  padding: 2.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: fadeInUp 1s ease-out 0.4s both;
+}
+
+.game-mode-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.game-mode-card:hover::before {
+  opacity: 1;
+}
+
+.game-mode-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 35px 70px -12px rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.game-mode-icon-container {
+  margin: 0 auto 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-radius: 50%;
+  width: 5rem;
+  height: 5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.4s ease;
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.2);
+}
+
+.game-mode-card:hover .game-mode-icon-container {
+  transform: scale(1.15) rotate(5deg);
+  box-shadow: 0 20px 45px -5px rgba(0, 0, 0, 0.3);
+}
+
+.game-mode-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: white;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.game-mode-title {
+  color: white;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.01em;
+}
+
+.game-mode-description {
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.game-mode-button {
+  width: 100%;
+  font-weight: 600;
+  padding: 1rem 2rem;
+  border-radius: 1rem;
+  font-size: 1.125rem;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.game-mode-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.game-mode-button:hover::before {
+  left: 100%;
+}
+
+.online-button {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.online-button:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px -5px rgba(239, 68, 68, 0.4);
+}
+
+.bot-button {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.bot-button:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px -5px rgba(59, 130, 246, 0.4);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .homepage-title {
+    font-size: 3rem;
+  }
+
+  .homepage-subtitle {
+    font-size: 1.125rem;
+  }
+
+  .how-to-play-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .game-modes {
+    grid-template-columns: 1fr;
+  }
+
+  .game-mode-card {
+    padding: 2rem;
+  }
+}
+and this is HomePage.jsx:
+"use client"
+
+import { Users, Bot, Coins } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import "./HomePage.css"
+
+export default function HomePage() {
+  const navigate = useNavigate()
+
+  const handleStartGame = (mode) => {
+    if (mode === "online") {
+      navigate("/ultimatum/matchmaking")
+    } else {
+      navigate(`/ultimatum/game?mode=${mode}`)
+    }
+  }
+
+  return (
+    <div className="homepage">
+      <div className="homepage-container">
+        <div className="homepage-header">
+          <h1 className="homepage-title">Ultimatum</h1>
+          <p className="homepage-subtitle">
+            You and a player are dividing a stack of coins. If the other player rejects your proposal, you both get
+            nothing. How much will you offer?
+          </p>
+        </div>
+
+        {/* Game Description Card */}
+        <div className="how-to-play-card">
+          <div className="how-to-play-header">
+            <Coins className="how-to-play-icon" />
+            <h2 className="how-to-play-title">How to Play</h2>
+          </div>
+          <div className="how-to-play-steps">
+            <div className="step">
+              <div className="step-number">
+                <span>1</span>
+              </div>
+              <h3 className="step-title">Make an Offer</h3>
+              <p className="step-description">Decide how much of the $100 to offer your opponent</p>
+            </div>
+            <div className="step">
+              <div className="step-number">
+                <span>2</span>
+              </div>
+              <h3 className="step-title">Wait for Decision</h3>
+              <p className="step-description">Your opponent will accept or reject your offer</p>
+            </div>
+            <div className="step">
+              <div className="step-number">
+                <span>3</span>
+              </div>
+              <h3 className="step-title">Get Results</h3>
+              <p className="step-description">If accepted, you both get money. If rejected, nobody gets anything</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Game Mode Selection */}
+        <div className="game-modes">
+          <div className="game-mode-card">
+            <div className="game-mode-icon-container">
+              <Users className="game-mode-icon" />
+            </div>
+            <h3 className="game-mode-title">Play Online</h3>
+            <p className="game-mode-description">Challenge a real player in our matchmaking system</p>
+            <button onClick={() => handleStartGame("online")} className="game-mode-button online-button">
+              Find Opponent
+            </button>
+          </div>
+
+          <div className="game-mode-card">
+            <div className="game-mode-icon-container">
+              <Bot className="game-mode-icon" />
+            </div>
+            <h3 className="game-mode-title">Play with Bot</h3>
+            <p className="game-mode-description">Practice against our AI opponent</p>
+            <button onClick={() => handleStartGame("bot")} className="game-mode-button bot-button">
+              Start Game
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+and this is Loading.css:
+.loading-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #4fd1c7 0%, #14b8a6 50%, #2563eb 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .loading-content {
+    text-align: center;
+  }
+  
+  .loading-spinner {
+    width: 8rem;
+    height: 8rem;
+    border: 2px solid transparent;
+    border-bottom: 2px solid white;
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    animation: spin 1s linear infinite;
+  }
+  
+  .loading-text {
+    color: white;
+    font-size: 1.25rem;
+  }
+  
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  and this is Loading.jsx:
+  import "./Loading.css"
+
+export default function Loading() {
+  return (
+    <div className="loading-page">
+      <div className="loading-content">
+        <div className="loading-spinner"></div>
+        <p className="loading-text">Loading...</p>
+      </div>
+    </div>
+  )
+}
+and this is MatchmakingPage.css:
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+
+.matchmaking-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 25%, #10b981 50%, #3b82f6 75%, #6366f1 100%);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  font-family: "Inter", sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.matchmaking-page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.matchmaking-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.matchmaking-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  animation: fadeInDown 1s ease-out;
+}
+
+.matchmaking-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 1rem;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.matchmaking-subtitle {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 400;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.matchmaking-card {
+  max-width: 32rem;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: white;
+  border-radius: 2rem;
+  padding: 3rem;
+  text-align: center;
+  box-shadow: 0 35px 80px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  animation: fadeInUp 1s ease-out 0.3s both;
+  position: relative;
+  overflow: hidden;
+}
+
+.matchmaking-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981, #f59e0b, #ef4444);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%,
+  100% {
+    background-position: 200% 0;
+  }
+  50% {
+    background-position: -200% 0;
+  }
+}
+
+.matchmaking-icon-container {
+  margin: 0 auto 2rem;
+}
+
+.matchmaking-spinner {
+  width: 5rem;
+  height: 5rem;
+  color: white;
+  animation: spin 1s linear infinite;
+  filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.3));
+}
+
+.matchmaking-success {
+  width: 5rem;
+  height: 5rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  box-shadow: 0 15px 35px -5px rgba(16, 185, 129, 0.4);
+  animation: successPulse 2s ease-in-out infinite;
+}
+
+@keyframes successPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.matchmaking-success span {
+  font-size: 2rem;
+  color: white;
+  font-weight: bold;
+}
+
+.matchmaking-status-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.matchmaking-status-text {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 2rem;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+.matchmaking-info {
+  margin-bottom: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.matchmaking-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.matchmaking-info-row:last-child {
+  margin-bottom: 0;
+}
+
+.matchmaking-player-id {
+  font-family: "Courier New", monospace;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.connection-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.connection-connected {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.connection-connecting {
+  color: #f59e0b;
+  animation: spin 1s linear infinite;
+  font-weight: 600;
+}
+
+.connection-disconnected {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.cancel-button {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(10px);
+}
+
+.cancel-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .matchmaking-title {
+    font-size: 2.5rem;
+  }
+
+  .matchmaking-subtitle {
+    font-size: 1rem;
+  }
+
+  .matchmaking-card {
+    padding: 2rem;
+  }
+
+  .matchmaking-status-title {
+    font-size: 1.5rem;
+  }
+}
+and this is MatchmakingPage.jsx:
+"use client"
+
+import { useState, useEffect } from "react"
+import { Loader2, Wifi, WifiOff } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import "./MatchmakingPage.css"
+
+export default function MatchmakingPage() {
+  const navigate = useNavigate()
+  const [isSearching, setIsSearching] = useState(true)
+  const [playerId, setPlayerId] = useState("")
+  const [connectionStatus, setConnectionStatus] = useState("connecting")
+
+  useEffect(() => {
+    // Generate a random player ID
+    const id = `player_${Math.random().toString(36).substr(2, 9)}`
+    setPlayerId(id)
+
+    // Simulate connection process
+    const connectTimer = setTimeout(() => {
+      setConnectionStatus("connected")
+    }, 2000)
+
+    // Simulate finding opponent (for demo purposes)
+    const matchTimer = setTimeout(() => {
+      setIsSearching(false)
+      // Navigate to game after finding opponent
+      setTimeout(() => {
+        navigate("/ultimatum/game?mode=online")
+      }, 1500)
+    }, 8000)
+
+    return () => {
+      clearTimeout(connectTimer)
+      clearTimeout(matchTimer)
+    }
+  }, [navigate])
+
+  const handleCancel = () => {
+    navigate("/ultimatum")
+  }
+
+  return (
+    <div className="matchmaking-page">
+      <div className="matchmaking-container">
+        <div className="matchmaking-header">
+          <h1 className="matchmaking-title">Ultimatum</h1>
+          <p className="matchmaking-subtitle">
+            You and a player are dividing a stack of coins. If the other player rejects your proposal, you both get
+            nothing. How much will you offer?
+          </p>
+        </div>
+
+        <div className="matchmaking-card">
+          <div className="matchmaking-icon-container">
+            {isSearching ? (
+              <Loader2 className="matchmaking-spinner" />
+            ) : (
+              <div className="matchmaking-success">
+                <span>✓</span>
+              </div>
+            )}
+          </div>
+          <h2 className="matchmaking-status-title">{isSearching ? "Waiting for Opponent" : "Opponent Found!"}</h2>
+          <p className="matchmaking-status-text">
+            {isSearching
+              ? "Please wait while we find another player to join your game..."
+              : "Match found! Starting game..."}
+          </p>
+
+          <div className="matchmaking-info">
+            <div className="matchmaking-info-row">
+              <span>Your ID:</span>
+              <span className="matchmaking-player-id">{playerId}</span>
+            </div>
+            <div className="matchmaking-info-row">
+              <span>Connection Status:</span>
+              <div className="connection-status">
+                {connectionStatus === "connected" ? (
+                  <>
+                    <Wifi className="connection-icon connection-connected" />
+                    <span className="connection-connected">Connected</span>
+                  </>
+                ) : connectionStatus === "connecting" ? (
+                  <>
+                    <Loader2 className="connection-icon connection-connecting" />
+                    <span className="connection-connecting">Connecting</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="connection-icon connection-disconnected" />
+                    <span className="connection-disconnected">Disconnected</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {isSearching && (
+            <button onClick={handleCancel} className="cancel-button">
+              Cancel Search
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+and this is RootLayout.jsx:
+export default function RootLayout({ children }) {
+    return <div className="min-h-screen">{children}</div>
+  }
+  and this is UltimatumApp.jsx:
+  "use client"
+
+import { useState } from "react"
+import HomePage from "./HomePage"
+import MatchmakingPage from "./MatchmakingPage"
+import GamePage from "./GamePage"
+import Loading from "./Loading"
+
+export default function UltimatumApp() {
+  const [currentPage, setCurrentPage] = useState("home") // 'home' | 'matchmaking' | 'game' | 'loading'
+  const [gameMode, setGameMode] = useState("online") // 'online' | 'bot'
+
+  const handleStartGame = (mode) => {
+    setGameMode(mode)
+    if (mode === "online") {
+      setCurrentPage("matchmaking")
+    } else {
+      setCurrentPage("game")
+    }
+  }
+
+  const handleGameFound = () => {
+    setCurrentPage("game")
+  }
+
+  const handleCancelMatchmaking = () => {
+    setCurrentPage("home")
+  }
+
+  const handleGameEnd = () => {
+    if (gameMode === "online") {
+      setCurrentPage("matchmaking")
+    } else {
+      setCurrentPage("home")
+    }
+  }
+
+  const handleBackToMenu = () => {
+    setCurrentPage("home")
+  }
+
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case "home":
+        return <HomePage onStartGame={handleStartGame} />
+      case "matchmaking":
+        return <MatchmakingPage onGameFound={handleGameFound} onCancel={handleCancelMatchmaking} />
+      case "game":
+        return <GamePage gameMode={gameMode} onGameEnd={handleGameEnd} onBackToMenu={handleBackToMenu} />
+      case "loading":
+        return <Loading />
+      default:
+        return <HomePage onStartGame={handleStartGame} />
+    }
+  }
+
+  return <div className="ultimatum-app">{renderCurrentPage()}</div>
+}
+and I want you to add when the player and but I play with first I will submit the offer and the same thing must the player send me a offer to and when I submit a offer I will be have another thing received offer and I have how much I the bot or player offer for me and I have buttons like accept and reject

@@ -20,7 +20,8 @@ from django.views.generic import TemplateView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('the_game.urls')), 
+    # path("api/ultimatum/", include("ultimatum.urls")),
+    path("api/prisoners/", include("the_game.urls")),   # if you like
     path('', TemplateView.as_view(template_name='index.html')),
     path('<path:path>', TemplateView.as_view(template_name='index.html')),
 ]
