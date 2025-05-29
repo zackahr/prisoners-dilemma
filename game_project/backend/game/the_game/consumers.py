@@ -3,11 +3,9 @@ import json
 import asyncio
 import logging
 from django.utils import timezone
-
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
-
 from .models     import GameMatch, GameRound
 from .game_logic import calculate_payoff, update_game_stats
 
@@ -94,7 +92,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                     {"error": "You are not a registered player."}))
                 return
 
-            if not await self.process_action(fp, action):   # double-click / too early
+            if not await self.process_action(fp, action): 
                 return
 
             await self.channel_layer.group_send(self.room_group_name, {
