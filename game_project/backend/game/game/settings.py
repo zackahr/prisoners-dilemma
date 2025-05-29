@@ -28,7 +28,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-
+CORS_ALLOW_ALL_ORIGINS = True
 #CORS_ALLOW_ALL_ORIGINS=True
 #CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = [
@@ -51,7 +51,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
-
     'rest_framework',
     'channels',
 ]
@@ -161,4 +160,3 @@ CHANNEL_LAYERS = {
         },
     },
 }
-CORS_ALLOW_ALL_ORIGINS = True

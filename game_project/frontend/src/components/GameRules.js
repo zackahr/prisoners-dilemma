@@ -29,7 +29,7 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
       console.log("Starting game with fingerprint:", playerFingerprint)
 
       // Create a new game match
-      const response = await fetch("/api/create_match/", {
+      const response = await fetch("http://localhost:8001/api/prisoners/create_match/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
