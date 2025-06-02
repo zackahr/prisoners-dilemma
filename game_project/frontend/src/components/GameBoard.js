@@ -317,7 +317,7 @@ function GameBoard({ playerFingerprint }) {
             </div>
 
             {/* <RoundHistory history={gameState.roundHistory} isPlayer1={isPlayer1} /> */}
-            <PayoffsTable history={gameState.roundHistory} />
+            {/* <PayoffsTable history={gameState.roundHistory} /> */}
             {/* <PayoffsTable /> */}
           </div>
         </div>

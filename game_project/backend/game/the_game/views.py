@@ -37,8 +37,8 @@ def create_match(request):
                     )
                 game_match.player_2_fingerprint = player_fingerprint
                 game_match.player_2_ip = ip_address
-                game_match.player_2_country = 'Unknown' # Placeholder
-                game_match.player_2_city = 'Unknown'    # Placeholder
+                game_match.player_2_country = 'Unknown' 
+                game_match.player_2_city = 'Unknown'    
                 game_match.save()
                 status_message = 'joined_existing_match'
                 print(f"Player {player_fingerprint} joined existing match {game_match.match_id}")
@@ -72,7 +72,7 @@ def create_match(request):
                 player_1_ip=ip_address,
                 player_1_country='Unknown', 
                 player_1_city='Unknown',
-                player_2_fingerprint='bot' # Immediately set bot as player 2
+                player_2_fingerprint='bot'
             )
             status_message = 'created_bot_match'
             print(f"Player {player_fingerprint} created bot match {game_match.match_id}")

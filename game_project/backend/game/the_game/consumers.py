@@ -1,14 +1,11 @@
-
 import json
 import asyncio
 import logging
 from django.utils import timezone
-
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
-
-from .models     import GameMatch, GameRound
+from .models import GameMatch, GameRound
 from .game_logic import calculate_payoff, update_game_stats
 
 logger = logging.getLogger(__name__)
@@ -18,7 +15,7 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     # ───────────────────────── connect ──────────────────────────
     async def connect(self):
-        self.match_id   = self.scope["url_route"]["kwargs"]["match_id"]
+        self.match_id = self.scope["url_route"]["kwargs"]["match_id"]
         self.game_match = await self.get_game_match(self.match_id)
         if not self.game_match:
             logger.warning("Match %s not found – closing WS", self.match_id)
@@ -40,15 +37,16 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_discard(self.room_group_name,
                                                    self.channel_name)
 
-        # abort unfinished matches
-        if self.game_match and not self.game_match.is_complete:
+        # Delete incomplete matches on disconnect
+        if self.game_match:
             match_id = self.match_id
-            await self.channel_layer.group_send(self.room_group_name, {
-                "type": "game_aborted",
-                "msg":  "Opponent disconnected – match aborted."
-            })
-            await database_sync_to_async(self.game_match.delete)()
-            logger.info("Aborted match %s deleted.", match_id)
+            deleted = await self.delete_incomplete_match()
+            if deleted:
+                await self.channel_layer.group_send(self.room_group_name, {
+                    "type": "game_aborted",
+                    "msg": "Match was incomplete and has been deleted."
+                })
+                logger.info("Incomplete match %s deleted.", match_id)
 
     async def game_aborted(self, event):
         await self.send(text_data=json.dumps({
@@ -58,9 +56,9 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     # ──────────────────────── receive ───────────────────────────
     async def receive(self, text_data):
-        data   = json.loads(text_data)
+        data = json.loads(text_data)
         action = data.get("action")
-        fp     = data.get("player_fingerprint")
+        fp = data.get("player_fingerprint")
         if not action or not fp:
             return
 
@@ -94,7 +92,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                     {"error": "You are not a registered player."}))
                 return
 
-            if not await self.process_action(fp, action):   # double-click / too early
+            if not await self.process_action(fp, action): 
                 return
 
             await self.channel_layer.group_send(self.room_group_name, {
@@ -157,6 +155,13 @@ class GameConsumer(AsyncWebsocketConsumer):
             return None
 
     @database_sync_to_async
+    def delete_incomplete_match(self):
+        """Delete the match if it's incomplete"""
+        if self.game_match:
+            return self.game_match.delete_if_incomplete()
+        return False
+
+    @database_sync_to_async
     def handle_join(self, fp):
         if self.game_match.is_complete:
             return False
@@ -170,9 +175,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             return True
 
         if self.game_match.game_mode == "online":
-            # if self.game_match.player_2_fingerprint in (None, fp):
-            #     if fp == self.game_match.player_1_fingerprint:
-            #         return False
             if self.game_match.player_2_fingerprint in (None, fp):
                 if fp == self.game_match.player_1_fingerprint:
                     # same fingerprint – reject
@@ -192,7 +194,6 @@ class GameConsumer(AsyncWebsocketConsumer):
     def process_action(self, fp, action) -> bool:
         """
         Store the first valid click.
-        Enforces that **player-1 must move before player-2** every round.
         Returns True if stored, False otherwise.
         """
         latest = self.game_match.rounds.order_by("-round_number").first()
@@ -208,21 +209,10 @@ class GameConsumer(AsyncWebsocketConsumer):
         rnd, _ = GameRound.objects.get_or_create(
             match=self.game_match,
             round_number=rnd_no,
-            defaults={"round_start_time": timezone.now()},
+            defaults={"round_start_time": timezone.now().strftime('%Y-%m-%d %H:%M')},
         )
 
         wrote = False
-        # if fp == self.game_match.player_1_fingerprint:
-        #     if rnd.player_1_action is None:                # P1 can always act first
-        #         rnd.player_1_action = action
-        #         wrote = True
-
-        # elif fp == self.game_match.player_2_fingerprint:
-        #     if rnd.player_1_action is None:                # P2 clicked too early
-        #         return False
-        #     if rnd.player_2_action is None:
-        #         rnd.player_2_action = action
-        #         wrote = True
         # either player may act first – we just store their own choice
         if fp == self.game_match.player_1_fingerprint:
             if rnd.player_1_action is None:
@@ -246,10 +236,10 @@ class GameConsumer(AsyncWebsocketConsumer):
         r = self.game_match.rounds.order_by("-round_number").first()
         p1, p2 = calculate_payoff(r.player_1_action, r.player_2_action)
         r.player_1_score, r.player_2_score = p1, p2
-        r.round_end_time = timezone.now()
+        r.round_end_time = timezone.now().strftime('%Y-%m-%d %H:%M')
         r.save()
         update_game_stats(self.game_match.match_id)
-         # 👇 NEW – open empty record for the coming round
+        # 👇 NEW – open empty record for the coming round
         if r.round_number < 25:
             GameRound.objects.get_or_create(
                 match=self.game_match,
@@ -269,7 +259,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 p1 += r.player_1_score
                 p2 += r.player_2_score
                 history.append({
-                    "roundNumber":  r.round_number,
+                    "roundNumber": r.round_number,
                     "player1Action": r.player_1_action,
                     "player2Action": r.player_2_action,
                     "player1Points": r.player_1_score,
@@ -282,25 +272,25 @@ class GameConsumer(AsyncWebsocketConsumer):
             next_rnd = rounds.last().round_number
 
         game_over = self.game_match.is_complete or next_rnd > 25
-        waiting   = self.game_match.player_2_fingerprint is None \
+        waiting = self.game_match.player_2_fingerprint is None \
                     and self.game_match.game_mode == "online"
 
         last = rounds.last()
         return {
-            "currentRound":              min(next_rnd, 25),
-            "maxRounds":                 25,
-            "player1Score":              p1,
-            "player2Score":              p2,
+            "currentRound": min(next_rnd, 25),
+            "maxRounds": 25,
+            "player1Score": p1,
+            "player2Score": p2,
             "player1CooperationPercent": self.game_match.player_1_cooperation_percent,
             "player2CooperationPercent": self.game_match.player_2_cooperation_percent,
-            "roundHistory":              history,
-            "waitingForOpponent":        waiting,
-            "gameOver":                  game_over,
-            "player1LastAction":         last.player_1_action if last else None,
-            "player2LastAction":         last.player_2_action if last else None,
-            "gameMode":                  self.game_match.game_mode,
-            "player1Fingerprint":        self.game_match.player_1_fingerprint,
-            "player2Fingerprint":        self.game_match.player_2_fingerprint,
+            "roundHistory": history,
+            "waitingForOpponent": waiting,
+            "gameOver": game_over,
+            "player1LastAction": last.player_1_action if last else None,
+            "player2LastAction": last.player_2_action if last else None,
+            "gameMode": self.game_match.game_mode,
+            "player1Fingerprint": self.game_match.player_1_fingerprint,
+            "player2Fingerprint": self.game_match.player_2_fingerprint,
         }
 
     @database_sync_to_async
@@ -308,7 +298,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         self.game_match.player_1_final_score = gs["player1Score"]
         self.game_match.player_2_final_score = gs["player2Score"]
         self.game_match.is_complete = True
-        self.game_match.completed_at = timezone.now()
+        self.game_match.completed_at = timezone.now().strftime('%Y-%m-%d %H:%M')
         self.game_match.save()
 
     # ────────────────────── bot helper ──────────────────────────
@@ -319,7 +309,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             lambda: list(self.game_match.rounds.order_by("round_number"))
         )()
         player_hist = [r.player_1_action for r in rounds if r.player_1_action]
-        bot_hist    = [r.player_2_action for r in rounds if r.player_2_action]
+        bot_hist = [r.player_2_action for r in rounds if r.player_2_action]
 
         bot_action = await sync_to_async(make_bot_decision)(
             player_hist, bot_hist

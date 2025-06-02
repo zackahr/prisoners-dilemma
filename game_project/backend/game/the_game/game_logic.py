@@ -1,4 +1,3 @@
-# game_logic.py (No significant changes, but review for understanding)
 from .models import GameMatch, GameRound
 from django.utils import timezone
 
@@ -18,22 +17,25 @@ def calculate_payoff(player_1_action, player_2_action):
     elif player_1_action == "Defect" and player_2_action == "Defect":
         return 10, 10
     else:
-        return 0, 0  # Default case if actions are invalid
+        return 0, 0  
 
 def update_game_stats(match_id):
     """
     Update the game statistics after each round.
     This includes updating cooperation percentages for both players.
+    If the game doesn't reach 25 rounds and is incomplete, it will be deleted.
     """
-    game_match = GameMatch.objects.get(match_id=match_id)
-    rounds = game_match.rounds.all().order_by('round_number') # Ensure ordered for correct 'last' round
+    try:
+        game_match = GameMatch.objects.get(match_id=match_id)
+    except GameMatch.DoesNotExist:
+        return
+    
+    rounds = game_match.rounds.all().order_by('round_number')
     
     if not rounds.exists():
         return
     
     # Update the current round with scores (if not already done)
-    # This part is somewhat redundant if calculate_round_results in consumer already does this.
-    # It's good to have as a fallback or for consistency.
     current_round = rounds.last()
     if current_round.player_1_action and current_round.player_2_action and \
        (current_round.player_1_score is None or current_round.player_2_score is None):
@@ -43,7 +45,7 @@ def update_game_stats(match_id):
         )
         current_round.player_1_score = player_1_payoff
         current_round.player_2_score = player_2_payoff
-        current_round.round_end_time = timezone.now()
+        current_round.round_end_time = timezone.now().strftime('%Y-%m-%d %H:%M')
         current_round.save()
     
     # Update cooperation percentages
@@ -64,7 +66,7 @@ def update_game_stats(match_id):
     # Check for game completion after 25 rounds
     if completed_rounds_count >= 25:
         game_match.is_complete = True
-        game_match.completed_at = timezone.now()
+        game_match.completed_at = timezone.now().strftime('%Y-%m-%d %H:%M')
         
         # Recalculate total scores from all rounds
         player_1_total_score = sum(r.player_1_score for r in rounds if r.player_1_score is not None)
@@ -72,5 +74,20 @@ def update_game_stats(match_id):
         
         game_match.player_1_final_score = player_1_total_score
         game_match.player_2_final_score = player_2_total_score
+        game_match.save()
+    else:
+        game_match.save()
+
+def cleanup_incomplete_matches():
+    """
+    Utility function to clean up all incomplete matches.
+    This can be called periodically or manually to remove incomplete games.
+    """
+    incomplete_matches = GameMatch.objects.filter(is_complete=False)
+    deleted_count = 0
     
-    game_match.save()
+    for match in incomplete_matches:
+        if match.delete_if_incomplete():
+            deleted_count += 1
+    
+    return deleted_count
