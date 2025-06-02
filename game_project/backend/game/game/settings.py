@@ -39,11 +39,11 @@ CORS_ALLOW_METHODS = [
     'POST',
     'PUT',
 ]
-# Application definition
 
 INSTALLED_APPS = [
     'daphne',
     'the_game',
+    'ultimatum', 
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
