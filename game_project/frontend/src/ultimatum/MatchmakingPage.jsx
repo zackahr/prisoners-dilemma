@@ -1,44 +1,91 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import { Loader2, Wifi, WifiOff } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect, useRef } from "react";
+// import { Loader2, Wifi, WifiOff } from "lucide-react";
+import { Loader2, Wifi, WifiOff, XCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { createMatch } from "./ultimatum";
+import { getOrCreateFingerprint } from "./fingerprint";
+import { wsUrl }       from ".//wsUrl";
 import "./MatchmakingPage.css"
-
 export default function MatchmakingPage() {
   const navigate = useNavigate()
-  const [isSearching, setIsSearching] = useState(true)
-  const [playerId, setPlayerId] = useState("")
-  const [connectionStatus, setConnectionStatus] = useState("connecting")
+  const [isSearching,       setIsSearching]       = useState(true);
+  const [playerId,          setPlayerId]          = useState("");
+  const [connectionStatus,  setConnectionStatus]  = useState("connecting");
+
+  /* keep match-id in query so GamePage can grab it */
+  const goToGame = (matchId, fp) =>
+        navigate(`/ultimatum/game?match=${matchId}&fp=${fp}`);
+  const wsRef = useRef(null); 
+    const waitOnWebSocket = (matchId, fingerprint) => {
+    // const url = `ws://${window.location.host}/ws/ultimatum-game/${matchId}/`;
+  //  const proto = window.location.protocol === "https:" ? "wss" : "ws";
+    // in dev the front-end is  :8443 but back-end is :8000
+    // const backendHost = import.meta.env.DEV ? "localhost:8000" : window.location.host;
+    // const url = `${proto}://${backendHost}/ws/ultimatum-game/${matchId}/`;
+    const url = wsUrl(matchId);
+    console.log("Connecting to WebSocket:", url);
+    const ws  = new WebSocket(url);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ action: "join", player_fingerprint: fingerprint }));
+      setConnectionStatus("connected");
+    };
+
+    ws.onmessage = (e) => {
+      const m = JSON.parse(e.data);
+      if (m.game_state && !m.game_state.waitingForOpponent) {
+        ws.close();
+        navigate(`/ultimatum/game?match=${matchId}&fp=${fingerprint}`);
+      }
+    };
+
+    ws.onclose   = () => setConnectionStatus("disconnected");
+    ws.onerror   = () => setConnectionStatus("disconnected");
+  };
 
   useEffect(() => {
-    // Generate a random player ID
-    const id = `player_${Math.random().toString(36).substr(2, 9)}`
-    setPlayerId(id)
+      const fp = getOrCreateFingerprint();
+    setPlayerId(fp);
 
-    // Simulate connection process
-    const connectTimer = setTimeout(() => {
-      setConnectionStatus("connected")
-    }, 2000)
+    (async () => {
+      const res = await createMatch("online", fp);
 
-    // Simulate finding opponent (for demo purposes)
-    const matchTimer = setTimeout(() => {
-      setIsSearching(false)
-      // Navigate to game after finding opponent
-      setTimeout(() => {
-        navigate("/ultimatum/game?mode=online")
-      }, 1500)
-    }, 8000)
+      // if (res.status === "created_new_match") {
+      if (res.status === "created_new_match" || res.status === "rejoin_existing_match") {
+        /* I'm player-1 → open WS and wait */
+        waitOnWebSocket(res.match_id, fp);
+      } else if (res.status === "joined_existing_match") {
+        /* I'm player-2 → go straight in */
+        navigate(`/ultimatum/game?match=${res.match_id}&fp=${fp}`);
+      } else {
+        // alert(res.message || "Could not join match.");
+          window.dispatchEvent(
+          new CustomEvent("GLOBAL_MODAL", {
+            detail: {
+              title: "Oops!",
+              msg  : res.message || "Could not join match.",
+            },
+          })
+        );
+        setConnectionStatus("disconnected");
+        setIsSearching(false);
+      }
+    })();
 
+    /* cleanup */
     return () => {
-      clearTimeout(connectTimer)
-      clearTimeout(matchTimer)
-    }
-  }, [navigate])
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, []); // run once
+
 
   const handleCancel = () => {
-    navigate("/ultimatum")
-  }
+    if (wsRef.current) wsRef.current.close();
+    /* (optional) tell server to delete incomplete match */
+    // fetch("/api/ultimatum/cleanup-matches/", { method: "POST" });
+    navigate("/ultimatum");     // back to main menu
+  };
 
   return (
     <div className="matchmaking-page">
@@ -96,11 +143,12 @@ export default function MatchmakingPage() {
             </div>
           </div>
 
-          {isSearching && (
-            <button onClick={handleCancel} className="cancel-button">
-              Cancel Search
-            </button>
-          )}
+         {isSearching && (
+          <button onClick={handleCancel} className="cancel-button">
+            <XCircle size={16} style={{marginRight:6}}/>
+            Cancel Search
+          </button>
+        )}
         </div>
       </div>
     </div>

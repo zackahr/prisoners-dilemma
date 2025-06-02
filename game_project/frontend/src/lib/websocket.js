@@ -4,7 +4,8 @@ export class GameWebSocket {
       this.ws = null
       // Replace with your Django WebSocket URL
       // this.url = `ws://localhost:8000/ws/game/${gameId}/?player_id=${playerId}`
-      this.url = `ws://localhost:8000/ws/ultimatum/${gameId}/?player_id=${playerId}`
+      // this.url = `ws://localhost:8000/ws/ultimatum/${gameId}/?player_id=${playerId}`
+      this.url = `ws://localhost:8001/ws/ultimatum-game/${gameId}/`
       this.onMessage = onMessage
       this.onConnect = onConnect
       this.onDisconnect = onDisconnect

@@ -1,7 +1,5 @@
-//  src/components/GamePage.jsx
-"use client";
-
-import { useState, useEffect, useCallback } from "react";
+// import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Clock,
   DollarSign,
@@ -11,17 +9,21 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-
+import { wsUrl } from "./wsUrl";
 import PayoffsTable from "./PayoffsTable";    //  ← NEW
 import "./GamePage.css";
-
+// helper to pop nice modals (you already have the bus)
+const pop = (title, msg) =>
+  window.dispatchEvent(new CustomEvent("GLOBAL_MODAL", { detail: { title, msg } }));
 const MAX_ROUNDS  = 25;
 const TOTAL_MONEY = 100;
 
 export default function GamePage() {
   const navigate       = useNavigate();
   const [searchParams] = useSearchParams();
-  const gameMode       = searchParams.get("mode") || "online";
+  // const gameMode       = searchParams.get("mode") || "online";
+  const matchId    = searchParams.get("match");
+const fingerprint = searchParams.get("fp");
 
   /* ─────────────────────────────────────────────────────────
      ROUND STATE (only current round)
@@ -45,13 +47,106 @@ export default function GamePage() {
   /* input field */
   const [inputOffer, setInputOffer] = useState("");
 
+/* ─────────── WS setup ─────────── */
+const wsRef = useRef(null);
+
+useEffect(() => {
+  if (!matchId || !fingerprint) return;
+
+  // const url = `ws://${window.location.host}/ws/ultimatum-game/${matchId}/`;
+  // const ws  = new WebSocket(url);
+  const url = wsUrl(matchId);
+  const ws  = new WebSocket(url);
+  wsRef.current = ws;
+
+  ws.onopen = () =>
+    ws.send(JSON.stringify({ action: "join", player_fingerprint: fingerprint }));
+
+  ws.onmessage = ({ data }) => {
+    const msg = JSON.parse(data);
+
+    /* ---- GAME STATE (full snapshot) ---- */
+    if (msg.game_state) {
+      const gs = msg.game_state;
+
+      /* waiting for P2 to join */
+      if (gs.waitingForOpponent) {
+        setRound(r => ({ ...r, phase: "waiting_for_player" }));
+        return;
+      }
+
+      /* initialise / new round */
+      setRoundNumber(gs.currentRound);
+      if (gs.currentRoundState.offerMade) {
+        setRound({
+          phase            : gs.currentRoundState.responseMade ? "result" : "responding",
+          myOffer          : gs.currentRoundState.offer        ?? 0,
+          opponentOffer    : gs.currentRoundState.offer        ?? 0,
+          myResponse       : gs.currentRoundState.response,
+          opponentResponse : gs.currentRoundState.response,
+          resultCode       : null,
+          timeLeft         : 30,
+        });
+      } else {
+        setRound(r => ({ ...r, phase: "proposing", timeLeft: 30 }));
+      }
+
+      /* update history */
+      setHistory(
+        gs.roundHistory.map(h => ({
+          roundNumber : h.roundNumber,
+          player1Offer: h.offer,
+          player2Offer: h.offer, // we only store offers for grid
+        }))
+      );
+      return;
+    }
+
+    /* ---- INDIVIDUAL GAME ACTION ---- */
+    if (msg.action === "make_offer") {
+      if (msg.player_fingerprint === fingerprint) return; // already optimistic
+      setRound(r => ({
+        ...r,
+        opponentOffer: msg.offer,
+        phase        : "responding",
+        timeLeft     : 30,
+      }));
+    }
+
+    if (msg.action === "respond_to_offer") {
+      if (msg.player_fingerprint === fingerprint) return;
+      const accepted = msg.response === "accept";
+      setRound(r => ({
+        ...r,
+        opponentResponse: accepted ? "accepted" : "rejected",
+        phase           : "result",
+      }));
+    }
+
+    /* ---- GAME OVER / ABORT ---- */
+    if (msg.game_aborted) {
+      pop("Game cancelled", msg.message);
+      navigate("/ultimatum");
+    }
+    if (msg.game_over) {
+      pop("Match completed",
+          `Final score – P1 ${msg.player1_score} : P2 ${msg.player2_score}`);
+      navigate("/ultimatum");
+    }
+  };
+
+  ws.onclose = () => console.log("WS closed");
+  ws.onerror = () => console.log("WS error");
+
+  return () => ws.close();
+}, [matchId, fingerprint, navigate]);
   /* ─────────────────────────────────────────────────────────
      TIMER
   ───────────────────────────────────────────────────────── */
   useEffect(() => {
     if (round.timeLeft <= 0) return;
 
-    if (["proposing", "responding"].includes(round.phase)) {
+    if (["proposing", "responding", "waiting"].includes(round.phase)) {
       const t = setTimeout(
         () => setRound(r => ({ ...r, timeLeft: r.timeLeft - 1 })),
         1000
@@ -73,92 +168,33 @@ export default function GamePage() {
     return { me: 0, op: 0 };
   };
 
-  /* ─────────────────────────────────────────────────────────
-     SUBMIT OFFER
-  ───────────────────────────────────────────────────────── */
-  const submitOffer = useCallback(() => {
+
+  const submitOffer = () => {
+    if (!wsRef.current) return;
     const offer = Math.max(0, Math.min(+inputOffer || 0, TOTAL_MONEY));
-
-    /* move to WAITING phase */
-    setRound({
-      ...round,
-      phase     : "waiting",
-      myOffer   : offer,
-      timeLeft  : 15,
-    });
-
-    /* simulate opponent offer after 3 s */
-    setTimeout(() => {
-      const opponentOffer =
-        gameMode === "bot"
-          ? Math.floor(Math.random() * 20) + 25
-          : Math.floor(Math.random() * 30) + 20;
-
-      setRound(r => ({
-        ...r,
-        phase         : "responding",
-        opponentOffer : opponentOffer,
-        timeLeft      : 30,
-      }));
-    }, 3000);
-  }, [inputOffer, gameMode]);
-
-  /* ─────────────────────────────────────────────────────────
-     PLAYER RESPONSE
-  ───────────────────────────────────────────────────────── */
-  const respond = accepted => {
-    setRound(r => ({ ...r, myResponse: accepted ? "accepted" : "rejected", timeLeft: 15 }));
-
-    /* simulate opponent response after 2 s */
-    setTimeout(() => {
-      const oppAccept =
-        gameMode === "bot"
-          ? round.myOffer >= TOTAL_MONEY * 0.3
-          : Math.random() < round.myOffer / TOTAL_MONEY + 0.2;
-
-      const bothAcc = accepted && oppAccept;
-      const result  = bothAcc
-        ? "both_accepted"
-        : accepted
-        ? "opponent_rejected"
-        : oppAccept
-        ? "i_rejected"
-        : "both_rejected";
-
-      /* compute points and store in match history */
-      // const { me: p1, op: p2 } = earningsForRound(
-      //   round.myOffer,
-      //   round.opponentOffer,
-      //   accepted,
-      //   oppAccept
-      // );
-
-      // setHistory(h => [
-      //   // ...h,
-      //   // { roundNumber, player1Points: p1, player2Points: p2 },
-      //    ...h,
-      //   { roundNumber,
-      //     player1Offer : round.myOffer,
-      //     player2Offer : round.opponentOffer }
-      // ]);
-      setHistory(h => [
-        ...h,
-        {
-          roundNumber,
-          player1Offer: round.myOffer,
-          player2Offer: round.opponentOffer,
-        },
-      ]);
-
-      setRound(r => ({
-        ...r,
-        opponentResponse : oppAccept ? "accepted" : "rejected",
-        phase            : "result",
-        resultCode       : result,
-      }));
-    }, 2000);
+    setRound(r => ({ ...r, phase: "waiting", myOffer: offer, timeLeft: 30 }));
+  
+    wsRef.current.send(
+      JSON.stringify({
+        action            : "make_offer",
+        player_fingerprint: fingerprint,
+        offer,
+      })
+    );
   };
 
+  const respond = (accepted) => {
+    if (!wsRef.current) return;
+    setRound(r => ({ ...r, myResponse: accepted ? "accepted" : "rejected", phase: "waiting", timeLeft: 30 }));
+
+    wsRef.current.send(
+      JSON.stringify({
+        action            : "respond_to_offer",
+        player_fingerprint: fingerprint,
+        response          : accepted ? "accept" : "reject",
+      })
+    );
+  };
   /* ─────────────────────────────────────────────────────────
      NEXT ROUND  /  FINISH MATCH
   ───────────────────────────────────────────────────────── */
@@ -249,7 +285,8 @@ export default function GamePage() {
               <h2 className="phase-title">
                 {round.phase === "proposing"
                   ? "MAKE OFFER"
-                  : round.phase === "waiting"
+                  // : round.phase === "waiting"
+                  : ["waiting", "waiting_for_player"].includes(round.phase)
                   ? "WAITING…"
                   : "RESPOND"}
               </h2>
@@ -292,7 +329,8 @@ export default function GamePage() {
               )}
 
               {/* WAITING */}
-              {round.phase === "waiting" && (
+              {/* {round.phase === "waiting" && ( */}
+              {round.phase === "waiting_for_player" && (
                 <div className="waiting-section">
                   <div className="waiting-animation">
                     <div className="waiting-spinner" />
@@ -301,6 +339,16 @@ export default function GamePage() {
                   <p className="offer-amount">Your offer: ${round.myOffer}</p>
                 </div>
               )}
+              
+                {round.phase === "waiting" && (
+                  <div className="waiting-section">
+                    <div className="waiting-animation">
+                      <div className="waiting-spinner" />
+                      <p className="waiting-text">Waiting for opponent’s decision…</p>
+                    </div>
+                    <p className="offer-amount">Your offer: ${round.myOffer}</p>
+                  </div>
+                )}
 
               {/* RESPONDING */}
               {round.phase === "responding" && (

@@ -35,11 +35,20 @@ def create_match(request):
                     round_number=1
                 ).first()
                 
+                # if existing_round and existing_round.player_1_fingerprint == player_fingerprint:
+                #     return JsonResponse({
+                #         "status": "error",
+                #         "message": "You are already registered in this match."
+                #     }, status=400)
                 if existing_round and existing_round.player_1_fingerprint == player_fingerprint:
+                    # same player just refreshed → re-attach to the waiting match
                     return JsonResponse({
-                        "status": "error",
-                        "message": "You are already registered in this match."
-                    }, status=400)
+                        "status"                : "rejoin_existing_match",
+                        "match_id"              : existing_round.game_match_uuid,
+                        "game_mode"             : existing_round.game_mode,
+                        "player_1_fingerprint"  : existing_round.player_1_fingerprint,
+                        "player_2_fingerprint"  : existing_round.player_2_fingerprint,
+                    })
                 
                 if existing_round:
                     # Join existing match
