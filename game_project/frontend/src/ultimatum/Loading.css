@@ -1,0 +1,36 @@
+.loading-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #4fd1c7 0%, #14b8a6 50%, #2563eb 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .loading-content {
+    text-align: center;
+  }
+  
+  .loading-spinner {
+    width: 8rem;
+    height: 8rem;
+    border: 2px solid transparent;
+    border-bottom: 2px solid white;
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    animation: spin 1s linear infinite;
+  }
+  
+  .loading-text {
+    color: white;
+    font-size: 1.25rem;
+  }
+  
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  

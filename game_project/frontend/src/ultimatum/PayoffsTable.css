@@ -1,0 +1,72 @@
+/* ------------------------------------------------------------------
+ *  PayoffsTable.css  –  static 25-column payoff grid (glass style)
+ * ------------------------------------------------------------------*/
+
+/* ---------- section title (above the card) -----------------------*/
+.payoffs-title {
+  display: block;                      /* independent box           */
+  width: fit-content;                  /* only as wide as the text  */
+  margin: 0 auto 0.85rem;              /* <-- centred               */
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #38bdf8;                      /* cyan accent               */
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .30);
+}
+
+/* ---------- glass-card wrapper -----------------------------------*/
+.payoffs-wrapper {
+  width: 100%;
+  max-width: 1000px;                   /* never grow past this      */
+  background: rgba(255, 255, 255, .15);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, .25);
+  border-radius: .75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, .25);
+  padding: 1rem;
+  overflow-x: hidden;                  /* no scrollbar on desktop   */
+  margin: 0 auto;                      /* centre inside .payoffs-area */
+}
+
+/* ---------- table grid -------------------------------------------*/
+.payoffs-table {
+  width: 100%;                         /* stretch to glass-card     */
+  table-layout: fixed;                 /* 26 columns = equal width  */
+  border-collapse: collapse;
+}
+
+/* ---------- cell look & feel -------------------------------------*/
+.payoffs-table th,
+.payoffs-table td {
+  padding: .5rem .55rem;
+  font-size: .82rem;
+  text-align: center;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, .15);
+}
+
+.payoffs-table th {
+  background: rgba(255, 255, 255, .10);
+  font-weight: 700;
+}
+
+/* ---------- first column (labels) --------------------------------*/
+.player-label,
+.payoffs-table th:first-child {        /* header “Player” cell too  */
+  width: 110px;                        /* was 84 – give it room     */
+  text-align: left;                    /* nicer alignment           */
+  padding-left: .75rem;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, .10);
+}
+
+/* ---------- very small screens (≤ 520 px) ------------------------*/
+@media (max-width: 520px) {
+  .payoffs-wrapper { overflow-x: auto; } /* enable swipe-scroll      */
+
+  .payoffs-table th,
+  .payoffs-table td {
+    font-size: .72rem;
+    padding: .4rem .45rem;
+  }
+}

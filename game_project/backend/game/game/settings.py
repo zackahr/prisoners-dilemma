@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'channels',
+    # "ultimatum",
 ]
 
 MIDDLEWARE = [

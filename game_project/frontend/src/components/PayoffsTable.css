@@ -1,0 +1,64 @@
+/* ------------------------------------------------------------------
+ *  PayoffsTable.css – 25-column payoff grid (glass style)
+ * ------------------------------------------------------------------*/
+
+/* Title now stands outside the panel */
+.payoffs-title {
+  text-align: center;
+  margin: 0 0 0.75rem;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #38bdf8;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Glass-card wrapper ------------------------------------------------*/
+.payoffs-wrapper {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 1rem;
+  overflow: hidden;          /* no horizontal scrollbar now */
+}
+
+/* Table -------------------------------------------------------------*/
+.payoffs-table {
+  width: 100%;               /* <-- stretches across the panel */
+  table-layout: fixed;       /* equal columns, keeps grid tidy */
+  border-collapse: collapse;
+}
+
+.payoffs-table th,
+.payoffs-table td {
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  text-align: center;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.payoffs-table th {
+  background: rgba(255, 255, 255, 0.10);
+  font-weight: 700;
+}
+
+.player-label {
+  background: rgba(255, 255, 255, 0.10);
+  font-weight: 700;
+  width: 80px;               /* keeps the “Player 1/2” column readable */
+}
+
+/* Small screens: fall back to scrollable layout --------------------*/
+@media (max-width: 600px) {
+  .payoffs-wrapper {
+    overflow-x: auto;
+    padding: 1rem 0.75rem;
+  }
+
+  .payoffs-table {
+    width: max-content;      /* natural width, enable swipe scroll */
+  }
+}

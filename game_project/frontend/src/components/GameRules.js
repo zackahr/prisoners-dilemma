@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import { Users, Bot, Coins, Play, Trophy, Target } from "lucide-react"
 import PayoffMatrix from "./PayoffMatrix"
 import "./GameRules.css"
 
@@ -10,16 +11,16 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
 
   useEffect(() => {
     const getOrCreateUUID = () => {
-        const stored = localStorage.getItem("playerUUID");
-        if (stored) return stored;           // reuse
-        const uuid = crypto.randomUUID();    // brand-new
-        localStorage.setItem("playerUUID", uuid);
-        return uuid;
-    };
+      const stored = localStorage.getItem("playerUUID")
+      if (stored) return stored // reuse
+      const uuid = crypto.randomUUID() // brand-new
+      localStorage.setItem("playerUUID", uuid)
+      return uuid
+    }
 
-    const uuid = getOrCreateUUID();
-    setPlayerFingerprint(uuid);
-    console.log("Your player UUID:", uuid);
+    const uuid = getOrCreateUUID()
+    setPlayerFingerprint(uuid)
+    console.log("Your player UUID:", uuid)
   }, [setPlayerFingerprint])
 
   const startGame = async () => {
@@ -29,7 +30,7 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
       console.log("Starting game with fingerprint:", playerFingerprint)
 
       // Create a new game match
-      const response = await fetch("http://localhost:8001/api/prisoners/create_match/", {
+      const response = await fetch("/api/prisoners/create_match/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -43,83 +44,157 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
       const data = await response.json()
       console.log("Server response:", data)
 
-      // if (data.status && data.status.includes("match")) {
       if (data.status === "error") {
-        // show nice pop-up instead of alert
-        window.dispatchEvent(new CustomEvent("GLOBAL_MODAL", {
-           detail: {title:"Hold on!", msg: data.message}
-        }));
-        return;
+        window.dispatchEvent(
+          new CustomEvent("GLOBAL_MODAL", {
+            detail: { title: "Hold on!", msg: data.message },
+          }),
+        )
+        return
       }
       if (data.status && data.status.includes("match")) {
         setMatchId(data.match_id)
-        // Navigate to the game board
-        navigate(`/game/${data.match_id}`)
+        navigate(`/prisoners/game/${data.match_id}`)
       } else {
         console.error("Error creating game:", data.message)
         alert("Failed to create game. Please try again.")
       }
     } catch (error) {
       console.error("Error starting game:", error)
-      // alert("Failed to connect to server. Please try again."
-      window.dispatchEvent(new CustomEvent("GLOBAL_MODAL", {
-            detail:{title:"Network problem", msg:"Could not reach the server."}
-        }));
+      window.dispatchEvent(
+        new CustomEvent("GLOBAL_MODAL", {
+          detail: { title: "Network problem", msg: "Could not reach the server." },
+        }),
+      )
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="game-rules">
-      <h2>Repeated Prisoner's Dilemma</h2>
-
-      <div className="rules-content">
-        <h3>Game Rules</h3>
-        <p>
-          Play the Prisoner's Dilemma against another player. You will engage in multiple rounds of the game with the
-          following payoff matrix:
-        </p>
-
-        <PayoffMatrix />
-
-        <p>
-          In this game, you will compete against an opponent for multiple rounds. During each round, you must decide
-          whether to "Cooperate" or "Defect." The statistics will track your average earnings across all rounds. After
-          completing all rounds, a summary screen will display your average payoffs compared to your opponent.
-        </p>
-
-        <div className="strategy-tips">
-          <h3>Strategy Tips</h3>
-          <ul>
-            <li>If both players cooperate, both get a moderate reward (20 points each)</li>
-            <li>
-              If one player defects while the other cooperates, the defector gets a high reward (30 points) while the
-              cooperator gets nothing
-            </li>
-            <li>If both players defect, both get a low reward (10 points each)</li>
-            <li>Consider how your choices might influence your opponent's future decisions</li>
-          </ul>
+    <div className="game-rules-page">
+      <div className="game-rules-container">
+        <div className="game-rules-header">
+          <h1 className="game-rules-title">Prisoner's Dilemma</h1>
+          <p className="game-rules-subtitle">
+            Engage in strategic decision-making with another player. Will you cooperate or defect? Your choices shape
+            the outcome in this classic game theory experiment.
+          </p>
         </div>
 
-        <div className="game-mode-selection">
-          <h3>Game Mode</h3>
-          <div className="mode-options">
+        {/* How to Play Section */}
+        <div className="how-to-play-card">
+          <div className="how-to-play-header">
+            <Coins className="how-to-play-icon" />
+            <h2 className="how-to-play-title">How to Play</h2>
+          </div>
+          <div className="how-to-play-steps">
+            <div className="step">
+              <div className="step-number">
+                <span>1</span>
+              </div>
+              <h3 className="step-title">Choose Your Action</h3>
+              <p className="step-description">Each round, decide whether to Cooperate or Defect</p>
+            </div>
+            <div className="step">
+              <div className="step-number">
+                <span>2</span>
+              </div>
+              <h3 className="step-title">See the Results</h3>
+              <p className="step-description">Points are awarded based on both players' choices</p>
+            </div>
+            <div className="step">
+              <div className="step-number">
+                <span>3</span>
+              </div>
+              <h3 className="step-title">Play 25 Rounds</h3>
+              <p className="step-description">Accumulate points across multiple rounds to win</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Payoff Matrix */}
+        <div className="payoff-section">
+          <h3 className="payoff-title">Payoff Matrix</h3>
+          <PayoffMatrix />
+        </div>
+
+        {/* Strategy Tips */}
+        <div className="strategy-tips-card">
+          <div className="strategy-header">
+            <Trophy className="strategy-icon" />
+            <h3 className="strategy-title">Strategy Tips</h3>
+          </div>
+          <div className="strategy-grid">
+            <div className="strategy-item">
+              <Target className="strategy-item-icon" />
+              <div className="strategy-content">
+                <h4>Mutual Cooperation</h4>
+                <p>Both players get 20 points - a solid, sustainable strategy</p>
+              </div>
+            </div>
+            <div className="strategy-item">
+              <Target className="strategy-item-icon" />
+              <div className="strategy-content">
+                <h4>Temptation vs Sucker</h4>
+                <p>Defecting against cooperation gives 30 points, but leaves opponent with 0</p>
+              </div>
+            </div>
+            <div className="strategy-item">
+              <Target className="strategy-item-icon" />
+              <div className="strategy-content">
+                <h4>Mutual Defection</h4>
+                <p>Both players get only 10 points - the punishment for mutual distrust</p>
+              </div>
+            </div>
+            <div className="strategy-item">
+              <Target className="strategy-item-icon" />
+              <div className="strategy-content">
+                <h4>Think Long-term</h4>
+                <p>Your choices influence your opponent's future decisions</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Game Mode Selection */}
+        <div className="game-modes">
+          <div className="game-mode-card">
+            <div className="game-mode-icon-container">
+              <Users className="game-mode-icon" />
+            </div>
+            <h3 className="game-mode-title">Play Online</h3>
+            <p className="game-mode-description">Challenge a real player in strategic decision-making</p>
             <button
-              className={`mode-button ${gameMode === "online" ? "active" : ""}`}
+              className={`game-mode-button online-button ${gameMode === "online" ? "active" : ""}`}
               onClick={() => setGameMode("online")}
             >
-              Play Online
+              {gameMode === "online" ? "Selected" : "Select Online"}
             </button>
-            <button className={`mode-button ${gameMode === "bot" ? "active" : ""}`} onClick={() => setGameMode("bot")}>
-              Play Against Bot
+          </div>
+
+          <div className="game-mode-card">
+            <div className="game-mode-icon-container">
+              <Bot className="game-mode-icon" />
+            </div>
+            <h3 className="game-mode-title">Play with Bot</h3>
+            <p className="game-mode-description">Practice against our intelligent AI opponent</p>
+            <button
+              className={`game-mode-button bot-button ${gameMode === "bot" ? "active" : ""}`}
+              onClick={() => setGameMode("bot")}
+            >
+              {gameMode === "bot" ? "Selected" : "Select Bot"}
             </button>
           </div>
         </div>
 
-        <button className="start-button" onClick={startGame} disabled={isLoading}>
-          {isLoading ? "Creating Game..." : "Let's Go Playing"}
-        </button>
+        {/* Start Game Button */}
+        <div className="start-game-section">
+          <button className="start-game-button" onClick={startGame} disabled={isLoading}>
+            <Play className="start-game-icon" />
+            {isLoading ? "Creating Game..." : "Let's Go Playing"}
+          </button>
+        </div>
       </div>
     </div>
   )
