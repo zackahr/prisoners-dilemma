@@ -8,6 +8,7 @@ import RoundHistory from "./RoundHistory"
 import GameTimer from "./GameTimer"
 import "./GameBoard.css"
 import Modal from "./Modal"
+import PayoffsTable from "./PayoffsTable";
 
 function GameBoard({ playerFingerprint }) {
   const { matchId } = useParams()
@@ -315,7 +316,9 @@ function GameBoard({ playerFingerprint }) {
               </button>
             </div>
 
-            <RoundHistory history={gameState.roundHistory} isPlayer1={isPlayer1} />
+            {/* <RoundHistory history={gameState.roundHistory} isPlayer1={isPlayer1} /> */}
+            <PayoffsTable history={gameState.roundHistory} />
+            {/* <PayoffsTable /> */}
           </div>
         </div>
       </div>
@@ -438,7 +441,8 @@ function GameBoard({ playerFingerprint }) {
         </div>
 
         <div className="round-history-section">
-          <RoundHistory history={gameState.roundHistory} isPlayer1={isPlayer1} />
+          {/* <RoundHistory history={gameState.roundHistory} isPlayer1={isPlayer1} /> */}
+          <PayoffsTable history={gameState.roundHistory} />
         </div>
       </div>
 

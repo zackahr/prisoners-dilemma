@@ -1,20 +1,19 @@
+Django==4.2
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.4.0
+django-cors-headers==3.14.0
 
-Django==3.2   
-redis==4.0.2   
-djangorestframework==3.12.4 
-psycopg2
-channels
-channels-redis
-python-dotenv
-dj-database-url
-djangorestframework
-daphne
-redis 
-django-redis
-celery[redis]
-djangorestframework-simplejwt
-django-cors-headers
-geoip2
+psycopg2>=2.9.0
+dj-database-url>=0.5.0
+django-redis>=5.0.0
 
+channels==3.0.5
+channels-redis==3.4.1
+daphne==3.0.2
 
+celery[redis]==5.2.7
+kombu>=5.2.0,<6.0
 
+python-dotenv>=1.0.0
+geoip2>=4.6.0
+redis==4.0.2
