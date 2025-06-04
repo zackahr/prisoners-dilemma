@@ -19,7 +19,6 @@ class GameMatch(models.Model):
     avg_cooperation_percent = models.FloatField(default=0)
     player_1_cooperation_percent = models.FloatField(default=0)
     player_2_cooperation_percent = models.FloatField(default=0)
-    # Added fields for final scores
     player_1_final_score = models.IntegerField(default=0)
     player_2_final_score = models.IntegerField(default=0)
     is_complete = models.BooleanField(default=False)
@@ -58,6 +57,12 @@ class GameRound(models.Model):
     round_end_time = models.CharField(max_length=50, blank=True, null=True)  
     player_1_score = models.IntegerField(null=True, blank=True)
     player_2_score = models.IntegerField(null=True, blank=True)
+    
+    player_1_cooperation_percent = models.FloatField(default=0)  
+    player_2_cooperation_percent = models.FloatField(default=0)  
+    avg_cooperation_percent = models.FloatField(default=0)       
+    player_1_cumulative_score = models.IntegerField(default=0)   # Running total
+    player_2_cumulative_score = models.IntegerField(default=0)   # Running total
 
     def save(self, *args, **kwargs):
         if not self.round_start_time:
