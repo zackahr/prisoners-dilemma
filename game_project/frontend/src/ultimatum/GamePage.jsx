@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react"
 import {
   Clock,
@@ -13,7 +12,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 
 import PayoffsTable from "./PayoffsTable"
 import { useWebSocket } from "../hooks/useWebSocket"
-import { gameApi, generatePlayerFingerprint } from "../services/gameApi"
+import { gameApi, getPlayerFingerprint } from "../services/gameApi"
 import "./GamePage.css"
 
 const MAX_ROUNDS = 25
@@ -23,12 +22,12 @@ export default function GamePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  // Read “mode” and “match” from the URL
+  // Read "mode" and "match" from the URL
   const gameMode = searchParams.get("mode") || "online"
   const urlMatchId = searchParams.get("match") || null
 
-  // Generate a local fingerprint
-  const [playerFingerprint] = useState(() => generatePlayerFingerprint())
+  // FIXED: Use the same fingerprint function as matchmaking
+  const [playerFingerprint] = useState(() => getPlayerFingerprint())
 
   // matchId starts as the URL param (if any), otherwise null
   const [matchId, setMatchId] = useState(urlMatchId)
@@ -37,12 +36,11 @@ export default function GamePage() {
   // Game‐state + timing
   const [inputOffer, setInputOffer] = useState("")
   const [timeLeft, setTimeLeft] = useState(30)
-  const [currentPhase, setCurrentPhase] = useState("waiting") // “waiting” | “proposing” | “responding” | “result”
+  const [currentPhase, setCurrentPhase] = useState("waiting") // "waiting" | "proposing" | "responding" | "result"
 
   // Hook that manages WebSocket connection (only opens once matchId is set)
   const { gameState, connectionStatus, error, sendMessage } =
     useWebSocket(matchId, playerFingerprint)
-
 
   // ─────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -50,6 +48,7 @@ export default function GamePage() {
       // 1) If URL already has a match ID, skip createMatch entirely
       if (urlMatchId) {
         console.log("🔗 Using existing match from URL:", urlMatchId)
+        console.log("👤 Using fingerprint:", playerFingerprint)
         setMatchId(urlMatchId)
         setIsInitializing(false)
         return
@@ -58,6 +57,7 @@ export default function GamePage() {
       // 2) Otherwise, no match param: call createMatch(...) to make/join a new one
       try {
         console.log("🚀 Initializing new match with mode:", gameMode)
+        console.log("👤 Using fingerprint:", playerFingerprint)
         const matchData = await gameApi.createMatch(gameMode, playerFingerprint)
         console.log("✅ Match initialized:", matchData.match_id)
         setMatchId(matchData.match_id)
@@ -70,7 +70,8 @@ export default function GamePage() {
 
     initializeMatch()
   }, [gameMode, playerFingerprint, urlMatchId])
-  // Whenever gameState updates, decide which phase we’re in
+
+  // Whenever gameState updates, decide which phase we're in
   useEffect(() => {
     if (!gameState) return
 
@@ -135,7 +136,7 @@ export default function GamePage() {
     return () => clearTimeout(timer)
   }, [timeLeft, currentPhase])
 
-  // “Make offer” callback
+  // "Make offer" callback
   const submitOffer = useCallback(() => {
     const offer = Math.max(0, Math.min(+inputOffer || 0, TOTAL_MONEY))
     console.log("💰 Submitting offer:", offer)
@@ -152,7 +153,7 @@ export default function GamePage() {
     }
   }, [inputOffer, sendMessage, playerFingerprint])
 
-  // “Respond to offer” callback
+  // "Respond to offer" callback
   const respondToOffer = useCallback(
     (accept) => {
       const response = accept ? "accept" : "reject"
@@ -196,6 +197,16 @@ export default function GamePage() {
             <XCircle className="error-icon" />
             <h2>Connection Error</h2>
             <p>{error}</p>
+            <div className="debug-info">
+              <p><strong>Your fingerprint:</strong> {playerFingerprint}</p>
+              <p><strong>Match ID:</strong> {matchId}</p>
+              {gameState && (
+                <>
+                  <p><strong>Player 1:</strong> {gameState.player1Fingerprint}</p>
+                  <p><strong>Player 2:</strong> {gameState.player2Fingerprint}</p>
+                </>
+              )}
+            </div>
             <button
               onClick={() => navigate("/ultimatum")}
               className="menu-button"
@@ -277,6 +288,7 @@ export default function GamePage() {
             Round {gameState?.currentRound || 1} of {MAX_ROUNDS}
           </p>
           <p className="match-id">Match ID: {matchId}</p>
+          <p className="player-id">Your ID: {playerFingerprint}</p>
         </div>
 
         {/* Main card (money display + phases) */}

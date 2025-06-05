@@ -4,13 +4,13 @@ import "./PayoffsTable.css"
 const TOTAL_ROUNDS = 25
 
 export default function PayoffsTable({ history }) {
-  console.log("📊 PayoffsTable received history:", history)
+  //console.log("📊 PayoffsTable received history:", history)
 
   const rounds = Array.from({ length: TOTAL_ROUNDS }, (_, i) => i + 1)
 
   const getRoundData = (roundNumber) => {
     const roundData = history.find((h) => h.roundNumber === roundNumber)
-    console.log(`📊 Round ${roundNumber} data:`, roundData)
+    //console.log(`📊 Round ${roundNumber} data:`, roundData)
     return roundData
   }
 

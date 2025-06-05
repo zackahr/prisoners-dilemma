@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from "react"
 import { Loader2, Wifi, WifiOff, Users } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { gameApi, generatePlayerFingerprint } from "../services/gameApi"
+import { gameApi, getPlayerFingerprint } from "../services/gameApi"
 import "./MatchmakingPage.css"
 
 export default function MatchmakingPage() {
   const navigate = useNavigate()
-  const [playerFingerprint] = useState(() => generatePlayerFingerprint())
+  
+  // FIXED: Use the new consistent fingerprint function
+  const [playerFingerprint] = useState(() => getPlayerFingerprint())
+  
   const [matchId, setMatchId] = useState(null)
   const [status, setStatus] = useState("searching") // searching, waiting, found, error
   const [error, setError] = useState(null)
@@ -29,7 +32,7 @@ export default function MatchmakingPage() {
       if (!mountedRef.current) return
       
       try {
-        console.log("🔍 Searching for online match...")
+        console.log("🔍 Searching for online match with fingerprint:", playerFingerprint)
         setStatus("searching")
 
         const matchData = await gameApi.createMatch("online", playerFingerprint)

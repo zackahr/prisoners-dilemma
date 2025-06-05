@@ -72,11 +72,30 @@ export const gameApi = {
   },
 }
 
-// Generate a unique player fingerprint
+// FIXED: Better fingerprint management
 export const generatePlayerFingerprint = () => {
   const timestamp = Date.now()
   const random = Math.random().toString(36).substring(2, 15)
   const fingerprint = `player_${timestamp}_${random}`
   console.log("👤 Generated player fingerprint:", fingerprint)
+  return fingerprint
+}
+
+// NEW: Get or create persistent fingerprint
+export const getPlayerFingerprint = () => {
+  const storageKey = 'ultimatum_player_fingerprint'
+  
+  // Try to get existing fingerprint
+  let fingerprint = sessionStorage.getItem(storageKey)
+  
+  if (!fingerprint) {
+    // Generate new one if none exists
+    fingerprint = generatePlayerFingerprint()
+    sessionStorage.setItem(storageKey, fingerprint)
+    console.log("💾 Saved new fingerprint to sessionStorage:", fingerprint)
+  } else {
+    console.log("🔄 Using existing fingerprint from sessionStorage:", fingerprint)
+  }
+  
   return fingerprint
 }

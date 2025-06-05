@@ -7,7 +7,7 @@ export const useWebSocket = (matchId, playerFingerprint) => {
   const [error, setError] = useState(null)
   const reconnectTimeoutRef = useRef(null)
   const reconnectAttemptsRef = useRef(0)
-  const connectionRef = useRef(null) // Track connection status
+  const connectionRef = useRef(null)
   const maxReconnectAttempts = 5
 
   const connect = useCallback(() => {
@@ -34,6 +34,8 @@ export const useWebSocket = (matchId, playerFingerprint) => {
       console.log("👤 Player fingerprint:", playerFingerprint)
 
       connectionRef.current = "connecting"
+      setConnectionStatus("connecting")
+      
       const ws = new WebSocket(wsUrl)
 
       ws.onopen = () => {
@@ -61,8 +63,9 @@ export const useWebSocket = (matchId, playerFingerprint) => {
             console.error("❌ Server error:", data.error)
             setError(data.error)
             
-            // If match is full, don't try to reconnect
-            if (data.error.includes("full") || data.error.includes("already started")) {
+            // If critical errors, don't try to reconnect
+            const criticalErrors = ["full", "already started", "Cannot join match"]
+            if (criticalErrors.some(err => data.error.includes(err))) {
               reconnectAttemptsRef.current = maxReconnectAttempts
             }
             return
@@ -71,6 +74,11 @@ export const useWebSocket = (matchId, playerFingerprint) => {
           if (data.game_state) {
             console.log("🎮 Game state update:", data.game_state)
             setGameState(data.game_state)
+            
+            // Clear any connection errors once we get valid game state
+            if (data.game_state && !data.game_state.error) {
+              setError(null)
+            }
           }
 
           if (data.game_over) {
@@ -78,8 +86,8 @@ export const useWebSocket = (matchId, playerFingerprint) => {
             setGameState((prev) => ({
               ...prev,
               gameOver: true,
-              player1Score: data.player1_score,
-              player2Score: data.player2_score,
+              player1Score: data.player1_score || 0,
+              player2Score: data.player2_score || 0,
             }))
           }
 
@@ -127,6 +135,13 @@ export const useWebSocket = (matchId, playerFingerprint) => {
         connectionRef.current = "disconnected"
         setSocket(null)
 
+        // Handle specific close codes
+        if (event.code === 4004) {
+          setError("Match not found")
+          console.log("🚫 Match not found - not attempting to reconnect")
+          return
+        }
+
         // Don't reconnect if it was a normal closure or if we've exceeded max attempts
         if (event.code === 1000 || reconnectAttemptsRef.current >= maxReconnectAttempts) {
           console.log("🚫 Not attempting to reconnect")
@@ -148,13 +163,16 @@ export const useWebSocket = (matchId, playerFingerprint) => {
 
       ws.onerror = (error) => {
         console.error("❌ WebSocket error:", error)
-        setError("Connection error occurred")
         setConnectionStatus("error")
         connectionRef.current = "error"
+        
+        // Don't set generic error message immediately - wait for onclose
+        if (error.code === "ECONNREFUSED") {
+          setError("Cannot connect to game server")
+        }
       }
 
       setSocket(ws)
-      setConnectionStatus("connecting")
     } catch (err) {
       console.error("❌ Failed to create WebSocket connection:", err)
       setError("Failed to connect to game server")
