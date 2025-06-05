@@ -5,6 +5,7 @@ export const useWebSocket = (matchId, playerFingerprint) => {
   const [gameState, setGameState] = useState(null)
   const [connectionStatus, setConnectionStatus] = useState("disconnected")
   const [error, setError] = useState(null)
+  const [matchTerminated, setMatchTerminated] = useState(false)
   const reconnectTimeoutRef = useRef(null)
   const reconnectAttemptsRef = useRef(0)
   const connectionRef = useRef(null)
@@ -13,6 +14,12 @@ export const useWebSocket = (matchId, playerFingerprint) => {
   const connect = useCallback(() => {
     if (!matchId || !playerFingerprint) {
       console.log("❌ Cannot connect: missing matchId or playerFingerprint")
+      return
+    }
+
+    // Don't reconnect if match was terminated
+    if (matchTerminated) {
+      console.log("❌ Match was terminated - not reconnecting")
       return
     }
 
@@ -58,6 +65,15 @@ export const useWebSocket = (matchId, playerFingerprint) => {
         try {
           const data = JSON.parse(event.data)
           console.log("📥 Received WebSocket message:", data)
+
+          // Handle match termination
+          if (data.match_terminated) {
+            console.log("🚫 Match terminated:", data.reason)
+            setMatchTerminated(true)
+            setError(`Match ended: ${data.reason}`)
+            reconnectAttemptsRef.current = maxReconnectAttempts // Prevent reconnection
+            return
+          }
 
           if (data.error) {
             console.error("❌ Server error:", data.error)
@@ -142,6 +158,19 @@ export const useWebSocket = (matchId, playerFingerprint) => {
           return
         }
 
+        if (event.code === 4001) {
+          setError("Match terminated by server")
+          setMatchTerminated(true)
+          console.log("🚫 Match terminated by server - not attempting to reconnect")
+          return
+        }
+
+        // Don't reconnect if match was terminated
+        if (matchTerminated) {
+          console.log("🚫 Match terminated - not attempting to reconnect")
+          return
+        }
+
         // Don't reconnect if it was a normal closure or if we've exceeded max attempts
         if (event.code === 1000 || reconnectAttemptsRef.current >= maxReconnectAttempts) {
           console.log("🚫 Not attempting to reconnect")
@@ -179,7 +208,7 @@ export const useWebSocket = (matchId, playerFingerprint) => {
       setConnectionStatus("error")
       connectionRef.current = "error"
     }
-  }, [matchId, playerFingerprint])
+  }, [matchId, playerFingerprint, matchTerminated])
 
   const disconnect = useCallback(() => {
     console.log("🔌 Disconnecting WebSocket")
@@ -204,6 +233,11 @@ export const useWebSocket = (matchId, playerFingerprint) => {
 
   const sendMessage = useCallback(
     (message) => {
+      if (matchTerminated) {
+        console.log("❌ Cannot send message: match terminated")
+        return false
+      }
+
       if (socket && socket.readyState === WebSocket.OPEN) {
         console.log("📤 Sending message:", message)
         socket.send(JSON.stringify(message))
@@ -214,25 +248,26 @@ export const useWebSocket = (matchId, playerFingerprint) => {
         return false
       }
     },
-    [socket],
+    [socket, matchTerminated],
   )
 
   // Connect when matchId and playerFingerprint are available
   useEffect(() => {
-    if (matchId && playerFingerprint) {
+    if (matchId && playerFingerprint && !matchTerminated) {
       connect()
     }
     
     return () => {
       disconnect()
     }
-  }, [matchId, playerFingerprint]) // Remove connect and disconnect from dependencies
+  }, [matchId, playerFingerprint, matchTerminated]) // Add matchTerminated dependency
 
   return {
     socket,
     gameState,
     connectionStatus,
     error,
+    matchTerminated,
     sendMessage,
     connect,
     disconnect,
