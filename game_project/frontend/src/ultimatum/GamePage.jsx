@@ -1,263 +1,300 @@
-//  src/components/GamePage.jsx
-"use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react"
 import {
   Clock,
   DollarSign,
   CheckCircle,
   XCircle,
-  TrendingUp,
-  TrendingDown,
-} from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+  Wifi,
+  WifiOff,
+  Loader2,
+} from "lucide-react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 
-import PayoffsTable from "./PayoffsTable";    //  ← NEW
-import "./GamePage.css";
+import PayoffsTable from "./PayoffsTable"
+import { useWebSocket } from "../hooks/useWebSocket"
+import { gameApi, generatePlayerFingerprint } from "../services/gameApi"
+import "./GamePage.css"
 
-const MAX_ROUNDS  = 25;
-const TOTAL_MONEY = 100;
+const MAX_ROUNDS = 25
+const TOTAL_MONEY = 100
 
 export default function GamePage() {
-  const navigate       = useNavigate();
-  const [searchParams] = useSearchParams();
-  const gameMode       = searchParams.get("mode") || "online";
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
-  /* ─────────────────────────────────────────────────────────
-     ROUND STATE (only current round)
-  ───────────────────────────────────────────────────────── */
-  const [round, setRound] = useState({
-    phase            : "proposing",   // proposing | waiting | responding | result
-    myOffer          : 0,
-    opponentOffer    : 0,
-    myResponse       : null,          // accepted | rejected | null
-    opponentResponse : null,
-    resultCode       : null,
-    timeLeft         : 30,
-  });
+  // Read “mode” and “match” from the URL
+  const gameMode = searchParams.get("mode") || "online"
+  const urlMatchId = searchParams.get("match") || null
 
-  /* ─────────────────────────────────────────────────────────
-     MATCH-LEVEL STATE (persists across rounds)
-  ───────────────────────────────────────────────────────── */
-  const [roundNumber, setRoundNumber] = useState(1);
-  const [history, setHistory]         = useState([]);   // [{ roundNumber, player1Points, player2Points }]
+  // Generate a local fingerprint
+  const [playerFingerprint] = useState(() => generatePlayerFingerprint())
 
-  /* input field */
-  const [inputOffer, setInputOffer] = useState("");
+  // matchId starts as the URL param (if any), otherwise null
+  const [matchId, setMatchId] = useState(urlMatchId)
+  const [isInitializing, setIsInitializing] = useState(true)
 
-  /* ─────────────────────────────────────────────────────────
-     TIMER
-  ───────────────────────────────────────────────────────── */
+  // Game‐state + timing
+  const [inputOffer, setInputOffer] = useState("")
+  const [timeLeft, setTimeLeft] = useState(30)
+  const [currentPhase, setCurrentPhase] = useState("waiting") // “waiting” | “proposing” | “responding” | “result”
+
+  // Hook that manages WebSocket connection (only opens once matchId is set)
+  const { gameState, connectionStatus, error, sendMessage } =
+    useWebSocket(matchId, playerFingerprint)
+
+
+  // ─────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (round.timeLeft <= 0) return;
+    const initializeMatch = async () => {
+      // 1) If URL already has a match ID, skip createMatch entirely
+      if (urlMatchId) {
+        console.log("🔗 Using existing match from URL:", urlMatchId)
+        setMatchId(urlMatchId)
+        setIsInitializing(false)
+        return
+      }
 
-    if (["proposing", "responding"].includes(round.phase)) {
-      const t = setTimeout(
-        () => setRound(r => ({ ...r, timeLeft: r.timeLeft - 1 })),
-        1000
-      );
-      return () => clearTimeout(t);
+      // 2) Otherwise, no match param: call createMatch(...) to make/join a new one
+      try {
+        console.log("🚀 Initializing new match with mode:", gameMode)
+        const matchData = await gameApi.createMatch(gameMode, playerFingerprint)
+        console.log("✅ Match initialized:", matchData.match_id)
+        setMatchId(matchData.match_id)
+      } catch (err) {
+        console.error("❌ Failed to initialize match:", err)
+      } finally {
+        setIsInitializing(false)
+      }
     }
-  }, [round.timeLeft, round.phase]);
 
-  /* ─────────────────────────────────────────────────────────
-     HELPERS
-  ───────────────────────────────────────────────────────── */
-  const earningsForRound = (myOffer, oppOffer, myAcc, oppAcc) => {
-    if (myAcc && oppAcc) {
-      return {
-        me : TOTAL_MONEY - myOffer + oppOffer,
-        op : TOTAL_MONEY - oppOffer + myOffer,
-      };
+    initializeMatch()
+  }, [gameMode, playerFingerprint, urlMatchId])
+  // Whenever gameState updates, decide which phase we’re in
+  useEffect(() => {
+    if (!gameState) return
+
+    console.log("🎮 Processing game state update:", gameState)
+
+    if (gameState.gameOver) {
+      setCurrentPhase("result")
+      return
     }
-    return { me: 0, op: 0 };
-  };
 
-  /* ─────────────────────────────────────────────────────────
-     SUBMIT OFFER
-  ───────────────────────────────────────────────────────── */
+    if (gameState.waitingForOpponent) {
+      setCurrentPhase("waiting")
+      return
+    }
+
+    const currentRound = gameState.currentRoundState
+    if (!currentRound) return
+
+    const isMyTurnToPropose =
+      currentRound.proposerFingerprint === playerFingerprint
+    const isMyTurnToRespond =
+      currentRound.responderFingerprint === playerFingerprint
+
+    console.log("🎯 Turn analysis:", {
+      isMyTurnToPropose,
+      isMyTurnToRespond,
+      proposerFingerprint: currentRound.proposerFingerprint,
+      responderFingerprint: currentRound.responderFingerprint,
+      myFingerprint: playerFingerprint,
+      offerMade: currentRound.offerMade,
+      responseMade: currentRound.responseMade,
+    })
+
+    if (isMyTurnToPropose && !currentRound.offerMade) {
+      setCurrentPhase("proposing")
+      setTimeLeft(30)
+    } else if (
+      isMyTurnToRespond &&
+      currentRound.offerMade &&
+      !currentRound.responseMade
+    ) {
+      setCurrentPhase("responding")
+      setTimeLeft(30)
+    } else {
+      setCurrentPhase("waiting")
+      setTimeLeft(15)
+    }
+  }, [gameState, playerFingerprint])
+
+  // Timer countdown for proposing/responding
+  useEffect(() => {
+    if (
+      timeLeft <= 0 ||
+      currentPhase === "waiting" ||
+      currentPhase === "result"
+    )
+      return
+
+    const timer = setTimeout(() => {
+      setTimeLeft((prev) => prev - 1)
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [timeLeft, currentPhase])
+
+  // “Make offer” callback
   const submitOffer = useCallback(() => {
-    const offer = Math.max(0, Math.min(+inputOffer || 0, TOTAL_MONEY));
+    const offer = Math.max(0, Math.min(+inputOffer || 0, TOTAL_MONEY))
+    console.log("💰 Submitting offer:", offer)
 
-    /* move to WAITING phase */
-    setRound({
-      ...round,
-      phase     : "waiting",
-      myOffer   : offer,
-      timeLeft  : 15,
-    });
+    const success = sendMessage({
+      action: "make_offer",
+      player_fingerprint: playerFingerprint,
+      offer: offer,
+    })
 
-    /* simulate opponent offer after 3 s */
-    setTimeout(() => {
-      const opponentOffer =
-        gameMode === "bot"
-          ? Math.floor(Math.random() * 20) + 25
-          : Math.floor(Math.random() * 30) + 20;
-
-      setRound(r => ({
-        ...r,
-        phase         : "responding",
-        opponentOffer : opponentOffer,
-        timeLeft      : 30,
-      }));
-    }, 3000);
-  }, [inputOffer, gameMode]);
-
-  /* ─────────────────────────────────────────────────────────
-     PLAYER RESPONSE
-  ───────────────────────────────────────────────────────── */
-  const respond = accepted => {
-    setRound(r => ({ ...r, myResponse: accepted ? "accepted" : "rejected", timeLeft: 15 }));
-
-    /* simulate opponent response after 2 s */
-    setTimeout(() => {
-      const oppAccept =
-        gameMode === "bot"
-          ? round.myOffer >= TOTAL_MONEY * 0.3
-          : Math.random() < round.myOffer / TOTAL_MONEY + 0.2;
-
-      const bothAcc = accepted && oppAccept;
-      const result  = bothAcc
-        ? "both_accepted"
-        : accepted
-        ? "opponent_rejected"
-        : oppAccept
-        ? "i_rejected"
-        : "both_rejected";
-
-      /* compute points and store in match history */
-      // const { me: p1, op: p2 } = earningsForRound(
-      //   round.myOffer,
-      //   round.opponentOffer,
-      //   accepted,
-      //   oppAccept
-      // );
-
-      // setHistory(h => [
-      //   // ...h,
-      //   // { roundNumber, player1Points: p1, player2Points: p2 },
-      //    ...h,
-      //   { roundNumber,
-      //     player1Offer : round.myOffer,
-      //     player2Offer : round.opponentOffer }
-      // ]);
-      setHistory(h => [
-        ...h,
-        {
-          roundNumber,
-          player1Offer: round.myOffer,
-          player2Offer: round.opponentOffer,
-        },
-      ]);
-
-      setRound(r => ({
-        ...r,
-        opponentResponse : oppAccept ? "accepted" : "rejected",
-        phase            : "result",
-        resultCode       : result,
-      }));
-    }, 2000);
-  };
-
-  /* ─────────────────────────────────────────────────────────
-     NEXT ROUND  /  FINISH MATCH
-  ───────────────────────────────────────────────────────── */
-  const startNextRound = () => {
-    if (roundNumber >= MAX_ROUNDS) {
-      navigate("/ultimatum");          // or show a final scoreboard page
-      return;
+    if (success) {
+      setInputOffer("")
+      setCurrentPhase("waiting")
     }
+  }, [inputOffer, sendMessage, playerFingerprint])
 
-    setRoundNumber(n => n + 1);
-    setInputOffer("");
-    setRound({
-      phase            : "proposing",
-      myOffer          : 0,
-      opponentOffer    : 0,
-      myResponse       : null,
-      opponentResponse : null,
-      resultCode       : null,
-      timeLeft         : 30,
-    });
-  };
+  // “Respond to offer” callback
+  const respondToOffer = useCallback(
+    (accept) => {
+      const response = accept ? "accept" : "reject"
+      console.log("🤔 Responding to offer:", response)
 
-  /* ─────────────────────────────────────────────────────────
-                       RENDER
-  ───────────────────────────────────────────────────────── */
+      const success = sendMessage({
+        action: "respond_to_offer",
+        player_fingerprint: playerFingerprint,
+        response: response,
+      })
 
-  /* ————— RESULT PHASE ————— */
-  if (round.phase === "result") {
-    const bothAcc = round.resultCode === "both_accepted";
-    const { me: myEarn, op: opEarn } = earningsForRound(
-      round.myOffer,
-      round.opponentOffer,
-      round.myResponse === "accepted",
-      round.opponentResponse === "accepted"
-    );
+      if (success) {
+        setCurrentPhase("waiting")
+      }
+    },
+    [sendMessage, playerFingerprint]
+  )
 
+  // ─── Rendering ───────────────────────────────────────────────────────────────
+
+  // 1) Show loading spinner while initializing (or waiting for matchId)
+  if (isInitializing || !matchId) {
+    return (
+      <div className="game-page">
+        <div className="game-container">
+          <div className="loading-section">
+            <Loader2 className="loading-spinner" />
+            <p>Initializing game…</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 2) Connection error (e.g. WS refused)
+  if (error) {
+    return (
+      <div className="game-page">
+        <div className="game-container">
+          <div className="error-section">
+            <XCircle className="error-icon" />
+            <h2>Connection Error</h2>
+            <p>{error}</p>
+            <button
+              onClick={() => navigate("/ultimatum")}
+              className="menu-button"
+            >
+              Back to Menu
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 3) Game over screen
+  if (currentPhase === "result" && gameState?.gameOver) {
     return (
       <div className="game-over-page">
         <div className="game-over-container">
-          {/* header */}
           <div className="game-over-header">
-            <h1 className="game-over-title">
-              Round {roundNumber} / {MAX_ROUNDS} Complete
-            </h1>
+            <h1 className="game-over-title">Game Complete!</h1>
+            <p>All {MAX_ROUNDS} rounds finished</p>
           </div>
 
-          {/* --- result-card (unchanged … retain your existing JSX) --- */}
-          {/* … omitted for brevity – keep your original content … */}
+          <div className="final-scores">
+            <div className="score-card">
+              <h3>Final Scores</h3>
+              <div className="scores">
+                <div className="score-item">
+                  <span>Player 1:</span>
+                  <span>${gameState.player1Score}</span>
+                </div>
+                <div className="score-item">
+                  <span>Player 2:</span>
+                  <span>${gameState.player2Score}</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-          {/* buttons */}
           <div className="action-buttons">
-            <button onClick={startNextRound} className="play-again-button">
-              {roundNumber >= MAX_ROUNDS ? "Finish Match" : "Next Round"}
-            </button>
-            <button onClick={() => navigate("/ultimatum")} className="menu-button">
-              Main Menu
+            <button
+              onClick={() => navigate("/ultimatum")}
+              className="menu-button"
+            >
+              Back to Menu
             </button>
           </div>
 
-          {/* static pay-off grid */}
-          <PayoffsTable history={history} />
+          <PayoffsTable history={gameState.roundHistory || []} />
         </div>
       </div>
-    );
+    )
   }
 
-  /* ————— ALL OTHER PHASES ————— */
+  // 4) Main game interface
   return (
     <div className="game-page">
       <div className="game-container">
-        {/* headline box */}
-        <div className="game-header">
-          <h1 className="game-title">Ultimatum</h1>
-          <p className="game-subtitle">
-            Both players make offers to each other. If either rejects, nobody gets anything.
-          </p>
+        {/* Connection status badge */}
+        <div className="connection-status">
+          {connectionStatus === "connected" ? (
+            <>
+              <Wifi className="connection-icon connected" /> Connected
+            </>
+          ) : connectionStatus === "connecting" ? (
+            <>
+              <Loader2 className="connection-icon connecting" /> Connecting
+            </>
+          ) : (
+            <>
+              <WifiOff className="connection-icon disconnected" /> Disconnected
+            </>
+          )}
         </div>
 
-        {/* central card */}
+        {/* Game header */}
+        <div className="game-header">
+          <h1 className="game-title">Ultimatum Game</h1>
+          <p className="game-subtitle">
+            Round {gameState?.currentRound || 1} of {MAX_ROUNDS}
+          </p>
+          <p className="match-id">Match ID: {matchId}</p>
+        </div>
+
+        {/* Main card (money display + phases) */}
         <div className="game-board">
           <div className="game-card">
-            {/* timer & phase */}
             <div className="game-card-header">
               <div className="timer">
                 <Clock className="timer-icon" />
-                <span>{round.timeLeft}s</span>
+                <span>{timeLeft}s</span>
               </div>
               <h2 className="phase-title">
-                {round.phase === "proposing"
-                  ? "MAKE OFFER"
-                  : round.phase === "waiting"
-                  ? "WAITING…"
-                  : "RESPOND"}
+                {currentPhase === "proposing" && "MAKE YOUR OFFER"}
+                {currentPhase === "responding" && "RESPOND TO OFFER"}
+                {currentPhase === "waiting" && "WAITING…"}
               </h2>
             </div>
 
-            {/* content */}
             <div className="game-card-content">
-              {/* money pile */}
               <div className="money-display">
                 <div className="money-content">
                   <DollarSign className="money-icon" />
@@ -265,15 +302,29 @@ export default function GamePage() {
                 </div>
               </div>
 
-              {/* PROPOSING */}
-              {round.phase === "proposing" && (
+              {/* Waiting for opponent to join (initial round) */}
+              {gameState?.waitingForOpponent && (
+                <div className="waiting-section">
+                  <div className="waiting-animation">
+                    <Loader2 className="waiting-spinner" />
+                    <p className="waiting-text">
+                      Waiting for opponent to join…
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Proposing phase */}
+              {currentPhase === "proposing" && (
                 <>
-                  <p className="offer-label">How much will you offer your opponent?</p>
+                  <p className="offer-label">
+                    How much will you offer your opponent?
+                  </p>
                   <div className="offer-input-container">
                     <input
                       type="number"
                       value={inputOffer}
-                      onChange={e => setInputOffer(e.target.value)}
+                      onChange={(e) => setInputOffer(e.target.value)}
                       min="0"
                       max={TOTAL_MONEY}
                       placeholder="0"
@@ -283,7 +334,9 @@ export default function GamePage() {
                   </div>
                   <button
                     onClick={submitOffer}
-                    disabled={!inputOffer || +inputOffer < 0 || +inputOffer > TOTAL_MONEY}
+                    disabled={
+                      !inputOffer || +inputOffer < 0 || +inputOffer > TOTAL_MONEY
+                    }
                     className="submit-button"
                   >
                     SUBMIT OFFER
@@ -291,63 +344,91 @@ export default function GamePage() {
                 </>
               )}
 
-              {/* WAITING */}
-              {round.phase === "waiting" && (
-                <div className="waiting-section">
-                  <div className="waiting-animation">
-                    <div className="waiting-spinner" />
-                    <p className="waiting-text">Waiting for opponent…</p>
-                  </div>
-                  <p className="offer-amount">Your offer: ${round.myOffer}</p>
-                </div>
-              )}
-
-              {/* RESPONDING */}
-              {round.phase === "responding" && (
-                <>
+              {/* Responding phase */}
+              {currentPhase === "responding" &&
+                gameState?.currentRoundState && (
                   <div className="responding-section">
-                    <div className="offers-comparison">
-                      <div className="offer-item">
-                        <p className="offer-label-small">Your Offer</p>
-                        <p className="offer-amount-large">${round.myOffer}</p>
-                      </div>
-                      <div className="offer-item">
-                        <p className="offer-label-small">Opponent's Offer</p>
-                        <p className="offer-amount-large highlight">${round.opponentOffer}</p>
-                      </div>
+                    <div className="offer-display">
+                      <p className="offer-label">Opponent offers you:</p>
+                      <p className="offer-amount-large">
+                        ${gameState.currentRoundState.offer}
+                      </p>
                     </div>
 
                     <div className="decision-info">
-                      <p className="decision-text">
-                        Opponent offers you{" "}
-                        <span className="highlight-amount">${round.opponentOffer}</span>
+                      <p className="keep-amount">
+                        If you accept: You get $
+                        {gameState.currentRoundState.offer}
                       </p>
-                      <p className="keep-amount">If you accept, you’ll earn: ${round.opponentOffer}</p>
-                      <p className="keep-amount">If you reject, you’ll earn: $0</p>
+                      <p className="keep-amount">If you reject: You get $0</p>
                     </div>
 
                     <div className="response-buttons">
-                      <button onClick={() => respond(true)}  className="accept-button">
+                      <button
+                        onClick={() => respondToOffer(true)}
+                        className="accept-button"
+                      >
+                        <CheckCircle className="button-icon" />
                         ACCEPT
                       </button>
-                      <button onClick={() => respond(false)} className="reject-button">
+                      <button
+                        onClick={() => respondToOffer(false)}
+                        className="reject-button"
+                      >
+                        <XCircle className="button-icon" />
                         REJECT
                       </button>
                     </div>
                   </div>
-                </>
+                )}
+
+              {/* Waiting phase (after either offer or response) */}
+              {currentPhase === "waiting" && !gameState?.waitingForOpponent && (
+                <div className="waiting-section">
+                  <div className="waiting-animation">
+                    <Loader2 className="waiting-spinner" />
+                    <p className="waiting-text">
+                      {gameState?.currentRoundState?.offerMade &&
+                      !gameState?.currentRoundState?.responseMade
+                        ? "Waiting for opponent's response…"
+                        : "Waiting for opponent's offer…"}
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
           </div>
-
         </div>
 
-        {/*  fixed pay-off table, always visible  */}
-        {/* <PayoffsTable history={history} /> */}
+        {/* Scores */}
+        {gameState && (
+          <div className="scores-section">
+            <div className="score-item">
+              <span>Your Score:</span>
+              <span>
+                $
+                {gameState.player1Fingerprint === playerFingerprint
+                  ? gameState.player1Score
+                  : gameState.player2Score}
+              </span>
+            </div>
+            <div className="score-item">
+              <span>Opponent Score:</span>
+              <span>
+                $
+                {gameState.player1Fingerprint === playerFingerprint
+                  ? gameState.player2Score
+                  : gameState.player1Score}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Payoffs/history table */}
         <div className="payoffs-area">
-          <PayoffsTable history={history} />
+          <PayoffsTable history={gameState?.roundHistory || []} />
         </div>
       </div>
     </div>
-  );
+  )
 }

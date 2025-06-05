@@ -1,4 +1,3 @@
-"use client"
 
 import { Users, Bot, Coins } from "lucide-react"
 import { useNavigate } from "react-router-dom"

@@ -1,6 +1,10 @@
-from django.urls import path
+# ultimatum/routing.py
+
+from django.urls import re_path
 from . import consumers
 
 websocket_urlpatterns = [
-    path('ws/ultimatum-game/<str:match_id>/', consumers.UltimatumGameConsumer.as_asgi()),
+    # Match exactly 8-character match_id (alphanumeric)
+    re_path(r'ws/ultimatum-game/(?P<match_id>\w{8})/$', 
+            consumers.UltimatumGameConsumer.as_asgi()),
 ]
