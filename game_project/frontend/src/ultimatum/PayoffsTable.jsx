@@ -36,7 +36,7 @@ export default function PayoffsTable({ history }) {
 
   return (
     <>
-      <h3 className="payoffs-title">Game History - Simultaneous Play</h3>
+      <h3 className="payoffs-title">Game History </h3>
 
       <div className="payoffs-wrapper">
         <table className="payoffs-table">
@@ -68,22 +68,7 @@ export default function PayoffsTable({ history }) {
                 </td>
               ))}
             </tr>
-            <tr>
-              <td className="player-label">P1 Response</td>
-              {rounds.map((r) => (
-                <td key={r} className="response-cell">
-                  {getPlayerResponse(r, 1)}
-                </td>
-              ))}
-            </tr>
-            <tr>
-              <td className="player-label">P2 Response</td>
-              {rounds.map((r) => (
-                <td key={r} className="response-cell">
-                  {getPlayerResponse(r, 2)}
-                </td>
-              ))}
-            </tr>
+            
             <tr>
               <td className="player-label">P1 Earned</td>
               {rounds.map((r) => (

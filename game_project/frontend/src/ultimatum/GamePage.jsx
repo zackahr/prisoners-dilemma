@@ -295,7 +295,7 @@ export default function GamePage() {
 
         {/* Game header */}
         <div className="game-header">
-          <h1 className="game-title simultaneous">Ultimatum Game - Simultaneous Play</h1>
+          <h1 className="game-title simultaneous">Ultimatum Game </h1>
           <p className="game-subtitle">
             Round {gameState?.currentRound || 1} of {MAX_ROUNDS}
           </p>
