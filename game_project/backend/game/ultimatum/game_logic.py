@@ -1,43 +1,61 @@
 from .models import UltimatumGameRound
 from django.utils import timezone
 
-def calculate_ultimatum_payoff(offer, response):
-
-    if response == "accept":
-        proposer_coins = 100 - offer  
-        responder_coins = offer       
-        total_coins = 100
-    else:  # reject
-        proposer_coins = 0
-        responder_coins = 0
-        total_coins = 0
+def calculate_simultaneous_payoff(p1_offer, p2_offer, p1_response, p2_response):
+    """
+    Calculate payoffs for simultaneous offers:
+    - P1 gets p2_offer if they accept P2's offer, otherwise 0
+    - P2 gets p1_offer if they accept P1's offer, otherwise 0
+    """
+    p1_coins = p2_offer if p1_response == "accept" else 0
+    p2_coins = p1_offer if p2_response == "accept" else 0
+    total_coins = p1_coins + p2_coins
     
-    return proposer_coins, responder_coins, total_coins
+    return p1_coins, p2_coins, total_coins
 
 def calculate_match_statistics(match_uuid, current_round_number):
     """Calculate acceptance rates and average offers for the match"""
     completed_rounds = UltimatumGameRound.objects.filter(
         game_match_uuid=match_uuid,
         round_number__lte=current_round_number,
-        proposer_offer__isnull=False,
-        responder_response__isnull=False
+        player_1_offer__isnull=False,
+        player_2_offer__isnull=False,
+        player_1_response_to_p2_offer__isnull=False,
+        player_2_response_to_p1_offer__isnull=False
     ).order_by('round_number')
     
     if not completed_rounds.exists():
         return 0, 0, 0, 0
     
     total_rounds = completed_rounds.count()
-    accepted_rounds = completed_rounds.filter(responder_response='accept').count()
-    match_acceptance_rate = (accepted_rounds / total_rounds) * 100 if total_rounds > 0 else 0
+    # Count total possible acceptances (2 per round)
+    total_possible_accepts = total_rounds * 2
     
-    total_offers = sum(r.proposer_offer for r in completed_rounds)
-    match_average_offer = total_offers / total_rounds if total_rounds > 0 else 0
+    # Count actual acceptances
+    total_accepts = 0
+    total_offers = 0
+    
+    for r in completed_rounds:
+        if r.player_1_response_to_p2_offer == 'accept':
+            total_accepts += 1
+        if r.player_2_response_to_p1_offer == 'accept':
+            total_accepts += 1
+        total_offers += r.player_1_offer + r.player_2_offer
+    
+    match_acceptance_rate = (total_accepts / total_possible_accepts) * 100 if total_possible_accepts > 0 else 0
+    match_average_offer = total_offers / (total_rounds * 2) if total_rounds > 0 else 0
     
     # Current round stats
     current_round = completed_rounds.filter(round_number=current_round_number).first()
     if current_round:
-        round_acceptance = 100 if current_round.responder_response == 'accept' else 0
-        round_offer = current_round.proposer_offer
+        current_accepts = 0
+        if current_round.player_1_response_to_p2_offer == 'accept':
+            current_accepts += 1
+        if current_round.player_2_response_to_p1_offer == 'accept':
+            current_accepts += 1
+        
+        round_acceptance = (current_accepts / 2) * 100
+        round_offer = (current_round.player_1_offer + current_round.player_2_offer) / 2
     else:
         round_acceptance = 0
         round_offer = 0
@@ -55,24 +73,19 @@ def update_game_stats(match_uuid, round_number):
         return
     
     # Check if round is complete
-    if current_round.proposer_offer is None or current_round.responder_response is None:
-        return    
-    current_round.proposer_keeps = 100 - current_round.proposer_offer
+    if not current_round.is_round_complete():
+        return
     
     # Calculate round payoff
-    proposer_coins, responder_coins, total_coins = calculate_ultimatum_payoff(
-        current_round.proposer_offer,
-        current_round.responder_response
+    p1_coins, p2_coins, total_coins = calculate_simultaneous_payoff(
+        current_round.player_1_offer,
+        current_round.player_2_offer,
+        current_round.player_1_response_to_p2_offer,
+        current_round.player_2_response_to_p1_offer
     )
     
-    # Assign coins to correct players based on roles
-    if current_round.player_1_role == 'proposer':
-        current_round.player_1_coins_made_in_round = proposer_coins
-        current_round.player_2_coins_made_in_round = responder_coins
-    else:
-        current_round.player_1_coins_made_in_round = responder_coins
-        current_round.player_2_coins_made_in_round = proposer_coins
-    
+    current_round.player_1_coins_made_in_round = p1_coins
+    current_round.player_2_coins_made_in_round = p2_coins
     current_round.players_sum_coins_in_round = total_coins
     current_round.round_end = timezone.now().strftime('%Y-%m-%d %H:%M')
     
@@ -82,8 +95,8 @@ def update_game_stats(match_uuid, round_number):
         round_number__lt=round_number
     )
     
-    p1_cumulative = sum(r.player_1_coins_made_in_round for r in previous_rounds) + current_round.player_1_coins_made_in_round
-    p2_cumulative = sum(r.player_2_coins_made_in_round for r in previous_rounds) + current_round.player_2_coins_made_in_round
+    p1_cumulative = sum(r.player_1_coins_made_in_round for r in previous_rounds) + p1_coins
+    p2_cumulative = sum(r.player_2_coins_made_in_round for r in previous_rounds) + p2_coins
     total_cumulative = p1_cumulative + p2_cumulative
     
     current_round.round_player_1_cumulative_score = p1_cumulative

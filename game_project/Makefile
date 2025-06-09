@@ -86,3 +86,21 @@ docker-prune:
 	docker volume prune -f
 	docker image prune -f
 	docker system prune -f
+
+
+
+
+
+
+#docker-compose down
+
+#docker system prune -a -f
+#ocker volume prune -f
+
+# 3. Update your package.json with the version above
+
+# 4. Build with no cache
+#docker-compose build --no-cache
+
+# 5. Start services
+#docker-compose up -d

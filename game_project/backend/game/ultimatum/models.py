@@ -13,12 +13,6 @@ class UltimatumGameRound(models.Model):
         ('reject', 'Reject'),
     ]
     
-    ROLE_CHOICES = [
-        ('proposer', 'Proposer'),
-        ('responder', 'Responder'),
-    ]
-    
-    # Primary identifiers
     row_number = models.AutoField(primary_key=True)
     game_match_uuid = models.CharField(max_length=8, db_index=True)
     round_number = models.IntegerField()
@@ -34,16 +28,13 @@ class UltimatumGameRound(models.Model):
     # Game mode
     game_mode = models.CharField(max_length=10, choices=GAME_MODES, default='online')
     
-    # Round roles (alternating each round)
-    player_1_role = models.CharField(max_length=10, choices=ROLE_CHOICES, blank=True, null=True)
-    player_2_role = models.CharField(max_length=10, choices=ROLE_CHOICES, blank=True, null=True)
+    # Simultaneous offers from both players
+    player_1_offer = models.IntegerField(null=True, blank=True)  
+    player_2_offer = models.IntegerField(null=True, blank=True) 
     
-    # Traditional Ultimatum Game actions
-    proposer_offer = models.IntegerField(null=True, blank=True)  
-    proposer_keeps = models.IntegerField(null=True, blank=True)  
-    responder_response = models.CharField(max_length=10, choices=RESPONSE_CHOICES, null=True, blank=True)
+    player_1_response_to_p2_offer = models.CharField(max_length=10, choices=RESPONSE_CHOICES, null=True, blank=True)
+    player_2_response_to_p1_offer = models.CharField(max_length=10, choices=RESPONSE_CHOICES, null=True, blank=True)
     
-    # Round results
     player_1_coins_made_in_round = models.IntegerField(default=0)
     player_2_coins_made_in_round = models.IntegerField(default=0)
     players_sum_coins_in_round = models.IntegerField(default=0)
@@ -53,11 +44,10 @@ class UltimatumGameRound(models.Model):
     round_player_2_cumulative_score = models.IntegerField(default=0)
     players_sum_coins_total = models.IntegerField(default=0)
     
-    # Final scores (only populated on last round)
     player_1_final_score = models.IntegerField(default=0)
     player_2_final_score = models.IntegerField(default=0)
     
-    round_acceptance_rate = models.FloatField(default=0)  # 0 or 100 for this round
+    round_acceptance_rate = models.FloatField(default=0)  # % of offers accepted this round
     match_acceptance_rate = models.FloatField(default=0)  # Overall acceptance rate for match
     
     # Average offer amounts
@@ -79,34 +69,19 @@ class UltimatumGameRound(models.Model):
     def save(self, *args, **kwargs):
         if not self.round_start:
             self.round_start = timezone.now().strftime('%Y-%m-%d %H:%M')
-        
-        # Set roles for the round (alternating)
-        if self.round_number and not self.player_1_role:
-            if self.round_number % 2 == 1:  # Odd rounds: P1 proposes, P2 responds
-                self.player_1_role = 'proposer'
-                self.player_2_role = 'responder'
-            else:  # Even rounds: P2 proposes, P1 responds
-                self.player_1_role = 'responder'
-                self.player_2_role = 'proposer'
-        
         super().save(*args, **kwargs)
     
     def __str__(self):
         return f"Round {self.round_number} of Match {self.game_match_uuid}"
 
-    @property
-    def current_proposer_fingerprint(self):
-        """Get the fingerprint of the current round's proposer"""
-        if self.player_1_role == 'proposer':
-            return self.player_1_fingerprint
-        return self.player_2_fingerprint
-    
-    @property
-    def current_responder_fingerprint(self):
-        """Get the fingerprint of the current round's responder"""
-        if self.player_1_role == 'responder':
-            return self.player_1_fingerprint
-        return self.player_2_fingerprint
+    def is_round_complete(self):
+        """Check if all actions for this round are complete"""
+        return (
+            self.player_1_offer is not None and 
+            self.player_2_offer is not None and
+            self.player_1_response_to_p2_offer is not None and
+            self.player_2_response_to_p1_offer is not None
+        )
 
     @classmethod
     def get_match_rounds(cls, match_uuid):
@@ -118,8 +93,10 @@ class UltimatumGameRound(models.Model):
         """Get count of completed rounds for a match"""
         return cls.objects.filter(
             game_match_uuid=match_uuid,
-            proposer_offer__isnull=False,
-            responder_response__isnull=False
+            player_1_offer__isnull=False,
+            player_2_offer__isnull=False,
+            player_1_response_to_p2_offer__isnull=False,
+            player_2_response_to_p1_offer__isnull=False
         ).count()
     
     @classmethod

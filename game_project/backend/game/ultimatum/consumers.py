@@ -15,9 +15,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         self.match_id = self.scope["url_route"]["kwargs"]["match_id"]
-        self.player_fingerprint = None  
-        
-        # Check if match exists before connecting
+        self.player_fingerprint = None          
         self.match_exists = await self.check_match_exists(self.match_id)
         
         if not self.match_exists:
@@ -49,28 +47,23 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
 
         if hasattr(self, 'match_exists') and self.match_exists:
             try:
-                # Check if match is complete
                 is_complete = await self.is_match_complete()
                 
                 if not is_complete:
                     logger.info(f"Player disconnected from incomplete match {self.match_id} - terminating match for all players")
                     
-                    # Notify other players that the match is being terminated
                     await self.channel_layer.group_send(self.room_group_name, {
                         "type": "match_terminated",
                         "reason": "Player disconnected",
                         "disconnected_player": getattr(self, 'player_fingerprint', 'unknown')
                     })
                     
-                    # Wait a moment for the message to be sent
                     await asyncio.sleep(0.5)
                     
-                    # Delete the incomplete match
                     deleted = await self.delete_match_completely()
                     if deleted:
                         logger.info(f"Incomplete match {self.match_id} deleted due to player disconnect")
                     
-                    # Close all connections in this match
                     await self.channel_layer.group_send(self.room_group_name, {
                         "type": "force_disconnect",
                     })
@@ -94,7 +87,6 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({"error": "Missing action or player_fingerprint"}))
             return
 
-        # Store player fingerprint for disconnect handling
         self.player_fingerprint = fp
         
         logger.info(f"Received action {action} from player {fp} in match {self.match_id}")
@@ -121,7 +113,6 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                     await self.send(text_data=json.dumps({"error": "Cannot join match"}))
                     return
                 
-                # Broadcast updated game state to all players
                 updated_game_state = await self.get_game_state()
                 await self.channel_layer.group_send(self.room_group_name, {
                     "type": "game_state_update",
@@ -133,7 +124,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 await self.send(text_data=json.dumps({"error": "Failed to join match"}))
                 return
 
-        # Handle game actions
+        # Handle make offer
         if action == "make_offer":
             try:
                 offer = data.get("offer")
@@ -151,18 +142,25 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                     "action": "make_offer",
                     "offer": offer,
                 })
+
+                # Check if bot needs to make offer
+                await self.handle_bot_offer_if_needed()
+
             except Exception as e:
                 logger.error(f"Error processing offer: {e}")
                 await self.send(text_data=json.dumps({"error": "Failed to process offer"}))
 
+        # Handle respond to offer
         elif action == "respond_to_offer":
             try:
+                target_player = data.get("target_player")  
                 response = data.get("response")
+                
                 if response not in ["accept", "reject"]:
                     await self.send(text_data=json.dumps({"error": "Invalid response"}))
                     return
 
-                if not await self.process_response(fp, response):
+                if not await self.process_response(fp, target_player, response):
                     await self.send(text_data=json.dumps({"error": "Cannot respond to offer"}))
                     return
 
@@ -170,20 +168,20 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                     "type": "game_action",
                     "player_fingerprint": fp,
                     "action": "respond_to_offer",
+                    "target_player": target_player,
                     "response": response,
                 })
 
-                # Check if round is complete after response
+                # Check if bot needs to respond
+                await self.handle_bot_response_if_needed()
+
+                # Check if round is complete
                 if await self.check_round_complete():
                     logger.info(f"Round complete in match {self.match_id}, calculating results...")
                     
-                    # Calculate round results
                     await self.calculate_round_results()
-                    
-                    # Get updated game state
                     gs = await self.get_game_state()
                     
-                    # Broadcast updated state
                     await self.channel_layer.group_send(self.room_group_name, {
                         "type": "game_state_update",
                         "game_state": gs,
@@ -197,37 +195,20 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                             "player2_score": gs.get("player2Score", 0),
                         })
                     else:
-                        # Create next round
                         logger.info(f"Creating next round for match {self.match_id}")
                         next_round_created = await self.create_next_round()
                         if next_round_created:
-                            # Send updated game state with new round
                             updated_gs = await self.get_game_state()
                             await self.channel_layer.group_send(self.room_group_name, {
                                 "type": "game_state_update",
                                 "game_state": updated_gs,
                             })
-                        else:
-                            logger.error(f"Failed to create next round for match {self.match_id}")
 
             except Exception as e:
                 logger.error(f"Error processing response: {e}")
                 await self.send(text_data=json.dumps({"error": "Failed to process response"}))
 
-        # Handle bot actions
-        try:
-            current_round = await self.get_current_round()
-            if current_round and current_round.game_mode == "bot":
-                if action == "make_offer" and current_round.current_responder_fingerprint == "bot":
-                    await asyncio.sleep(1.0)  # Bot thinking time
-                    await self.make_bot_response()
-                elif action == "respond_to_offer" and current_round.current_proposer_fingerprint == "bot":
-                    await asyncio.sleep(1.0)  # Bot thinking time
-                    await self.make_bot_offer()
-        except Exception as e:
-            logger.error(f"Error handling bot actions: {e}")
-
-    # NEW: Group message handlers for match termination
+    # Group message handlers
     async def match_terminated(self, event):
         try:
             await self.send(text_data=json.dumps({
@@ -242,11 +223,10 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
     async def force_disconnect(self, event):
         try:
             logger.info(f"Force disconnecting player from match {self.match_id}")
-            await self.close(code=4001)  # Custom code for forced disconnect
+            await self.close(code=4001)
         except Exception as e:
             logger.error(f"Error during force disconnect: {e}")
 
-    # Group message handlers
     async def game_action(self, event):
         try:
             await self.send(text_data=json.dumps({
@@ -254,6 +234,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 "action": event["action"],
                 "offer": event.get("offer"),
                 "response": event.get("response"),
+                "target_player": event.get("target_player"),
             }))
         except Exception as e:
             logger.error(f"Error sending game action: {e}")
@@ -282,18 +263,8 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
         return UltimatumGameRound.objects.filter(game_match_uuid=match_id).exists()
 
     @database_sync_to_async
-    def get_completed_rounds_count(self):
-        return UltimatumGameRound.objects.filter(
-            game_match_uuid=self.match_id,
-            proposer_offer__isnull=False,
-            responder_response__isnull=False
-        ).count()
-
-    @database_sync_to_async
     def is_match_complete(self):
-        """Check if the match is fully complete (25 rounds or marked as complete)"""
         try:
-            # Check if any round is marked as match_complete
             completed_match = UltimatumGameRound.objects.filter(
                 game_match_uuid=self.match_id,
                 match_complete=True
@@ -302,11 +273,12 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             if completed_match:
                 return True
             
-            # Check if 25 rounds are completed
             completed_rounds = UltimatumGameRound.objects.filter(
                 game_match_uuid=self.match_id,
-                proposer_offer__isnull=False,
-                responder_response__isnull=False
+                player_1_offer__isnull=False,
+                player_2_offer__isnull=False,
+                player_1_response_to_p2_offer__isnull=False,
+                player_2_response_to_p1_offer__isnull=False
             ).count()
             
             return completed_rounds >= 25
@@ -316,7 +288,6 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def delete_match_completely(self):
-        """Delete all rounds for this match"""
         try:
             deleted_count, _ = UltimatumGameRound.objects.filter(
                 game_match_uuid=self.match_id
@@ -339,22 +310,18 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 logger.warning(f"Match {self.match_id} not found or complete")
                 return False
 
-            # If player 1 doesn't exist, set it
             if not first_round.player_1_fingerprint:
                 first_round.player_1_fingerprint = fp
                 first_round.save()
                 logger.info(f"Set player 1 for match {self.match_id}: {fp}")
                 return True
 
-            # If this is player 1, allow reconnection
             if first_round.player_1_fingerprint == fp:
                 logger.info(f"Player 1 reconnected to match {self.match_id}: {fp}")
                 return True
 
-            # Handle player 2 joining
             if first_round.game_mode == "online":
                 if not first_round.player_2_fingerprint:
-                    # Don't allow same player to be both player 1 and 2
                     if fp == first_round.player_1_fingerprint:
                         logger.warning(f"Same player trying to join as both players: {fp}")
                         return False
@@ -363,12 +330,10 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                     logger.info(f"Set player 2 for match {self.match_id}: {fp}")
                     return True
                 elif first_round.player_2_fingerprint == fp:
-                    # Allow player 2 to reconnect
                     logger.info(f"Player 2 reconnected to match {self.match_id}: {fp}")
                     return True
                 else:
-                    # Match is full with different players
-                    logger.warning(f"Match {self.match_id} full. P1: {first_round.player_1_fingerprint}, P2: {first_round.player_2_fingerprint}, trying: {fp}")
+                    logger.warning(f"Match {self.match_id} full")
                     return False
             else:  # bot mode
                 if first_round.player_2_fingerprint != "bot":
@@ -400,16 +365,30 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 game_match_uuid=self.match_id
             ).order_by('-round_number').first()
             
-            if not current_round or current_round.proposer_offer is not None:
-                logger.warning(f"Cannot process offer for {self.match_id}: round not found or offer already made")
+            if not current_round:
+                logger.warning(f"No current round found for match {self.match_id}")
                 return False
 
-            # Check if this player is the proposer for this round
-            if fp != current_round.current_proposer_fingerprint:
-                logger.warning(f"Player {fp} is not the proposer for round {current_round.round_number} in match {self.match_id}")
+            first_round = UltimatumGameRound.objects.get(
+                game_match_uuid=self.match_id, 
+                round_number=1
+            )
+
+            # Determine which player is making the offer
+            if fp == first_round.player_1_fingerprint:
+                if current_round.player_1_offer is not None:
+                    logger.warning(f"Player 1 already made offer in round {current_round.round_number}")
+                    return False
+                current_round.player_1_offer = offer
+            elif fp == first_round.player_2_fingerprint:
+                if current_round.player_2_offer is not None:
+                    logger.warning(f"Player 2 already made offer in round {current_round.round_number}")
+                    return False
+                current_round.player_2_offer = offer
+            else:
+                logger.warning(f"Unknown player {fp} trying to make offer")
                 return False
 
-            current_round.proposer_offer = offer
             current_round.save()
             logger.info(f"Offer {offer} processed for player {fp} in match {self.match_id}")
             return True
@@ -418,29 +397,46 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             return False
 
     @database_sync_to_async
-    def process_response(self, fp, response):
+    def process_response(self, fp, target_player, response):
         try:
             current_round = UltimatumGameRound.objects.filter(
                 game_match_uuid=self.match_id
             ).order_by('-round_number').first()
             
-            if not current_round or current_round.responder_response is not None:
-                logger.warning(f"Cannot process response for {self.match_id}: round not found or response already made")
+            if not current_round:
+                logger.warning(f"No current round found for match {self.match_id}")
                 return False
 
-            # Check if this player is the responder for this round
-            if fp != current_round.current_responder_fingerprint:
-                logger.warning(f"Player {fp} is not the responder for round {current_round.round_number} in match {self.match_id}")
+            first_round = UltimatumGameRound.objects.get(
+                game_match_uuid=self.match_id, 
+                round_number=1
+            )
+
+            # Player 1 responding to Player 2's offer
+            if fp == first_round.player_1_fingerprint and target_player == "player_2":
+                if current_round.player_2_offer is None:
+                    logger.warning(f"Player 2 hasn't made offer yet")
+                    return False
+                if current_round.player_1_response_to_p2_offer is not None:
+                    logger.warning(f"Player 1 already responded to Player 2's offer")
+                    return False
+                current_round.player_1_response_to_p2_offer = response
+                
+            # Player 2 responding to Player 1's offer  
+            elif fp == first_round.player_2_fingerprint and target_player == "player_1":
+                if current_round.player_1_offer is None:
+                    logger.warning(f"Player 1 hasn't made offer yet")
+                    return False
+                if current_round.player_2_response_to_p1_offer is not None:
+                    logger.warning(f"Player 2 already responded to Player 1's offer")
+                    return False
+                current_round.player_2_response_to_p1_offer = response
+            else:
+                logger.warning(f"Invalid response from {fp} to {target_player}")
                 return False
 
-            # Check if offer has been made
-            if current_round.proposer_offer is None:
-                logger.warning(f"No offer made yet for round {current_round.round_number} in match {self.match_id}")
-                return False
-
-            current_round.responder_response = response
             current_round.save()
-            logger.info(f"Response {response} processed for player {fp} in match {self.match_id}")
+            logger.info(f"Response {response} processed for player {fp} responding to {target_player}")
             return True
         except Exception as e:
             logger.error(f"Error processing response: {e}")
@@ -456,8 +452,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             if not current_round:
                 return False
                 
-            is_complete = (current_round.proposer_offer is not None and 
-                          current_round.responder_response is not None)
+            is_complete = current_round.is_round_complete()
             
             if is_complete:
                 logger.info(f"Round {current_round.round_number} complete in match {self.match_id}")
@@ -503,7 +498,6 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 round_number=1
             )
             
-            # Check if next round already exists
             next_round_num = current_round.round_number + 1
             existing_next_round = UltimatumGameRound.objects.filter(
                 game_match_uuid=self.match_id,
@@ -530,8 +524,6 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             
         except Exception as e:
             logger.error(f"Error creating next round: {e}")
-            import traceback
-            traceback.print_exc()
             return False
 
     @database_sync_to_async
@@ -548,9 +540,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             current_round = rounds[-1]
             
             # Calculate totals from completed rounds
-            completed_rounds = [r for r in rounds if (
-                r.proposer_offer is not None and r.responder_response is not None
-            )]
+            completed_rounds = [r for r in rounds if r.is_round_complete()]
             
             total_p1_score = sum(r.player_1_coins_made_in_round for r in completed_rounds)
             total_p2_score = sum(r.player_2_coins_made_in_round for r in completed_rounds)
@@ -560,12 +550,10 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             for r in completed_rounds:
                 history.append({
                     "roundNumber": r.round_number,
-                    "proposerFingerprint": r.current_proposer_fingerprint,
-                    "responderFingerprint": r.current_responder_fingerprint,
-                    "offer": r.proposer_offer,
-                    "response": r.responder_response,
-                    "proposerEarned": (100 - r.proposer_offer) if r.responder_response == "accept" else 0,
-                    "responderEarned": r.proposer_offer if r.responder_response == "accept" else 0,
+                    "player1Offer": r.player_1_offer,
+                    "player2Offer": r.player_2_offer,
+                    "player1ResponseToP2": r.player_1_response_to_p2_offer,
+                    "player2ResponseToP1": r.player_2_response_to_p1_offer,
                     "player1Earned": r.player_1_coins_made_in_round,
                     "player2Earned": r.player_2_coins_made_in_round,
                 })
@@ -588,12 +576,14 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 "player2Fingerprint": first_round.player_2_fingerprint,
                 "currentRoundState": {
                     "roundNumber": current_round.round_number,
-                    "proposerFingerprint": current_round.current_proposer_fingerprint,
-                    "responderFingerprint": current_round.current_responder_fingerprint,
-                    "offerMade": current_round.proposer_offer is not None,
-                    "responseMade": current_round.responder_response is not None,
-                    "offer": current_round.proposer_offer,
-                    "response": current_round.responder_response,
+                    "player1OfferMade": current_round.player_1_offer is not None,
+                    "player2OfferMade": current_round.player_2_offer is not None,
+                    "player1ResponseMade": current_round.player_1_response_to_p2_offer is not None,
+                    "player2ResponseMade": current_round.player_2_response_to_p1_offer is not None,
+                    "player1Offer": current_round.player_1_offer,
+                    "player2Offer": current_round.player_2_offer,
+                    "player1Response": current_round.player_1_response_to_p2_offer,
+                    "player2Response": current_round.player_2_response_to_p1_offer,
                 }
             }
         except Exception as e:
@@ -601,34 +591,48 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             return {"error": f"Failed to get game state: {str(e)}"}
 
     # Bot helpers
-    async def make_bot_offer(self):
-        try:
-            offer = random.randint(20, 50)
-            if await self.process_offer("bot", offer):
-                await self.channel_layer.group_send(self.room_group_name, {
-                    "type": "game_action",
-                    "player_fingerprint": "bot",
-                    "action": "make_offer",
-                    "offer": offer,
-                })
-                logger.info(f"Bot made offer {offer} in match {self.match_id}")
-        except Exception as e:
-            logger.error(f"Error making bot offer: {e}")
-
-    async def make_bot_response(self):
+    async def handle_bot_offer_if_needed(self):
         try:
             current_round = await self.get_current_round()
-            if current_round and current_round.proposer_offer is not None:
-                # Simple bot strategy: accept if offer >= 30, otherwise reject
-                response = "accept" if current_round.proposer_offer >= 30 else "reject"
+            if (current_round and current_round.game_mode == "bot" and 
+                current_round.player_2_fingerprint == "bot" and 
+                current_round.player_2_offer is None):
                 
-                if await self.process_response("bot", response):
+                await asyncio.sleep(1.0)  # Bot thinking time
+                offer = random.randint(20, 50)
+                
+                if await self.process_offer("bot", offer):
                     await self.channel_layer.group_send(self.room_group_name, {
                         "type": "game_action",
                         "player_fingerprint": "bot",
-                        "action": "respond_to_offer",
-                        "response": response,
+                        "action": "make_offer",
+                        "offer": offer,
                     })
-                    logger.info(f"Bot responded {response} to offer {current_round.proposer_offer} in match {self.match_id}")
+                    logger.info(f"Bot made offer {offer} in match {self.match_id}")
+        except Exception as e:
+            logger.error(f"Error making bot offer: {e}")
+
+    async def handle_bot_response_if_needed(self):
+        try:
+            current_round = await self.get_current_round()
+            if (current_round and current_round.game_mode == "bot" and 
+                current_round.player_2_fingerprint == "bot"):
+                
+                # Bot responds to player 1's offer
+                if (current_round.player_1_offer is not None and 
+                    current_round.player_2_response_to_p1_offer is None):
+                    
+                    await asyncio.sleep(1.0)  # Bot thinking time
+                    response = "accept" if current_round.player_1_offer >= 30 else "reject"
+                    
+                    if await self.process_response("bot", "player_1", response):
+                        await self.channel_layer.group_send(self.room_group_name, {
+                            "type": "game_action",
+                            "player_fingerprint": "bot",
+                            "action": "respond_to_offer",
+                            "target_player": "player_1",
+                            "response": response,
+                        })
+                        logger.info(f"Bot responded {response} to player 1's offer {current_round.player_1_offer}")
         except Exception as e:
             logger.error(f"Error making bot response: {e}")
