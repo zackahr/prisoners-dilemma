@@ -13,18 +13,8 @@ export default function PayoffsTable({ history }) {
     const roundData = getRoundData(roundNumber)
     if (!roundData) return ""
     
-    return playerNumber === 1 ? (roundData.player1Offer ?? "") : (roundData.player2Offer ?? "")
-  }
-
-  const getPlayerResponse = (roundNumber, playerNumber) => {
-    const roundData = getRoundData(roundNumber)
-    if (!roundData) return ""
-    
-    if (playerNumber === 1) {
-      return roundData.player1ResponseToP2 ? (roundData.player1ResponseToP2 === "accept" ? "✓" : "✗") : ""
-    } else {
-      return roundData.player2ResponseToP1 ? (roundData.player2ResponseToP1 === "accept" ? "✓" : "✗") : ""
-    }
+    // Updated to use new field names: player1CoinsToOffer instead of player1Offer
+    return playerNumber === 1 ? (roundData.player1CoinsToOffer ?? "") : (roundData.player2CoinsToOffer ?? "")
   }
 
   const getPlayerEarnings = (roundNumber, playerNumber) => {
@@ -36,7 +26,7 @@ export default function PayoffsTable({ history }) {
 
   return (
     <>
-      <h3 className="payoffs-title">Game History </h3>
+      <h3 className="payoffs-title">Game History</h3>
 
       <div className="payoffs-wrapper">
         <table className="payoffs-table">
@@ -68,7 +58,6 @@ export default function PayoffsTable({ history }) {
                 </td>
               ))}
             </tr>
-            
             <tr>
               <td className="player-label">P1 Earned</td>
               {rounds.map((r) => (

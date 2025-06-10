@@ -103,7 +103,7 @@ export const useWebSocket = (matchId, playerFingerprint) => {
             }))
           }
 
-          // Handle simultaneous game actions
+          // Handle simultaneous game actions - UPDATED for new field names
           if (data.action) {
             console.log("🎯 Player action:", data)
             setGameState((prev) => {
@@ -117,16 +117,26 @@ export const useWebSocket = (matchId, playerFingerprint) => {
                   updated.currentRoundState = {
                     ...updated.currentRoundState,
                     player1OfferMade: true,
-                    player1Offer: data.offer,
+                    player1CoinsToKeep: data.coins_to_keep,
+                    player1CoinsToOffer: data.coins_to_offer,
+                    // Keep legacy field for backward compatibility
+                    player1Offer: data.coins_to_offer,
                   }
                 } else if (data.player_fingerprint === prev.player2Fingerprint) {
                   updated.currentRoundState = {
                     ...updated.currentRoundState,
                     player2OfferMade: true,
-                    player2Offer: data.offer,
+                    player2CoinsToKeep: data.coins_to_keep,
+                    player2CoinsToOffer: data.coins_to_offer,
+                    // Keep legacy field for backward compatibility
+                    player2Offer: data.coins_to_offer,
                   }
                 }
-                console.log("💰 Offer made:", data.offer, "by player:", data.player_fingerprint)
+                console.log("💰 Offer made:", {
+                  coinsToKeep: data.coins_to_keep,
+                  coinsToOffer: data.coins_to_offer,
+                  player: data.player_fingerprint
+                })
               }
 
               if (data.action === "respond_to_offer") {

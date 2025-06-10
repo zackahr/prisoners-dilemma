@@ -145,11 +145,11 @@ def game_page(request, match_id):
 def match_history(request, match_id):
     """Get the history of a specific match"""
     try:
-        # Updated to use new simultaneous gameplay fields
+        # Updated to use new field names
         rounds = UltimatumGameRound.objects.filter(
             game_match_uuid=match_id,
-            player_1_offer__isnull=False,
-            player_2_offer__isnull=False,
+            player_1_coins_to_offer__isnull=False,
+            player_2_coins_to_offer__isnull=False,
             player_1_response_to_p2_offer__isnull=False,
             player_2_response_to_p1_offer__isnull=False
         ).order_by('round_number')
@@ -164,8 +164,10 @@ def match_history(request, match_id):
         for round_obj in rounds:
             history.append({
                 'round_number': round_obj.round_number,
-                'player_1_offer': round_obj.player_1_offer,
-                'player_2_offer': round_obj.player_2_offer,
+                'player_1_coins_to_keep': round_obj.player_1_coins_to_keep,
+                'player_1_coins_to_offer': round_obj.player_1_coins_to_offer,
+                'player_2_coins_to_keep': round_obj.player_2_coins_to_keep,
+                'player_2_coins_to_offer': round_obj.player_2_coins_to_offer,
                 'player_1_response_to_p2': round_obj.player_1_response_to_p2_offer,
                 'player_2_response_to_p1': round_obj.player_2_response_to_p1_offer,
                 'player_1_earned': round_obj.player_1_coins_made_in_round,
@@ -227,8 +229,8 @@ def match_stats(request, match_id):
         # Get completed rounds using new field names
         completed_rounds = UltimatumGameRound.objects.filter(
             game_match_uuid=match_id,
-            player_1_offer__isnull=False,
-            player_2_offer__isnull=False,
+            player_1_coins_to_offer__isnull=False,
+            player_2_coins_to_offer__isnull=False,
             player_1_response_to_p2_offer__isnull=False,
             player_2_response_to_p1_offer__isnull=False
         ).order_by('round_number')
@@ -269,30 +271,30 @@ def match_stats(request, match_id):
             
             acceptance_rate = (total_accepts / total_responses * 100) if total_responses > 0 else 0
             
-            # Calculate offer statistics
+            # Calculate offer statistics using new field names
             all_offers = []
             for round_obj in completed_rounds:
-                if round_obj.player_1_offer is not None:
-                    all_offers.append(round_obj.player_1_offer)
-                if round_obj.player_2_offer is not None:
-                    all_offers.append(round_obj.player_2_offer)
+                if round_obj.player_1_coins_to_offer is not None:
+                    all_offers.append(round_obj.player_1_coins_to_offer)
+                if round_obj.player_2_coins_to_offer is not None:
+                    all_offers.append(round_obj.player_2_coins_to_offer)
             
             min_offer = min(all_offers) if all_offers else 0
             max_offer = max(all_offers) if all_offers else 0
             avg_offer = sum(all_offers) / len(all_offers) if all_offers else 0
             
-            # Player-specific statistics
-            p1_offers = [r.player_1_offer for r in completed_rounds if r.player_1_offer is not None]
-            p2_offers = [r.player_2_offer for r in completed_rounds if r.player_2_offer is not None]
+            # Player-specific statistics using new field names
+            p1_offers = [r.player_1_coins_to_offer for r in completed_rounds if r.player_1_coins_to_offer is not None]
+            p2_offers = [r.player_2_coins_to_offer for r in completed_rounds if r.player_2_coins_to_offer is not None]
             
             p1_average_offer = sum(p1_offers) / len(p1_offers) if p1_offers else 0
             p2_average_offer = sum(p2_offers) / len(p2_offers) if p2_offers else 0
             
             # Player response rates (how often their offers are accepted)
             p1_offers_accepted = sum(1 for r in completed_rounds 
-                                   if r.player_1_offer is not None and r.player_2_response_to_p1_offer == 'accept')
+                                   if r.player_1_coins_to_offer is not None and r.player_2_response_to_p1_offer == 'accept')
             p2_offers_accepted = sum(1 for r in completed_rounds 
-                                   if r.player_2_offer is not None and r.player_1_response_to_p2_offer == 'accept')
+                                   if r.player_2_coins_to_offer is not None and r.player_1_response_to_p2_offer == 'accept')
             
             p1_acceptance_rate = (p1_offers_accepted / len(p1_offers) * 100) if p1_offers else 0
             p2_acceptance_rate = (p2_offers_accepted / len(p2_offers) * 100) if p2_offers else 0

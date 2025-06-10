@@ -30,7 +30,7 @@ export default function GamePage() {
   const [matchId, setMatchId] = useState(urlMatchId)
   const [isInitializing, setIsInitializing] = useState(true)
 
-  // Game state for simultaneous play
+  // Game state for simultaneous play - UPDATED to use coins_to_offer
   const [inputOffer, setInputOffer] = useState("")
   const [timeLeft, setTimeLeft] = useState(OFFER_TIME_LIMIT)
   const [currentPhase, setCurrentPhase] = useState("waiting") // "waiting" | "offering" | "responding" | "result"
@@ -156,15 +156,22 @@ export default function GamePage() {
     return () => clearTimeout(timer)
   }, [timeLeft, currentPhase])
 
-  // Submit offer
+  // Submit offer - UPDATED to send coins_to_keep and coins_to_offer
   const submitOffer = useCallback(() => {
-    const offer = Math.max(0, Math.min(+inputOffer || 0, TOTAL_MONEY))
-    console.log("💰 Submitting offer:", offer)
+    const coinsToOffer = Math.max(0, Math.min(+inputOffer || 0, TOTAL_MONEY))
+    const coinsToKeep = TOTAL_MONEY - coinsToOffer
+    
+    console.log("💰 Submitting offer:", {
+      coinsToKeep,
+      coinsToOffer,
+      total: coinsToKeep + coinsToOffer
+    })
 
     const success = sendMessage({
       action: "make_offer",
       player_fingerprint: playerFingerprint,
-      offer: offer,
+      coins_to_keep: coinsToKeep,
+      coins_to_offer: coinsToOffer,
     })
 
     if (success) {
@@ -379,20 +386,52 @@ export default function GamePage() {
                 </div>
               )}
 
-              {/* Offering phase */}
+              {/* Offering phase - UPDATED to show coins breakdown */}
               {currentPhase === "offering" && !gameState?.waitingForOpponent && (
                 <div className="offer-section">
                   <p className="offer-label">How much will you offer your opponent?</p>
+                  <div className="offer-breakdown">
+                    <p className="breakdown-text">
+                      You offer: <strong>${inputOffer || 0}</strong> | 
+                      You keep: <strong>${TOTAL_MONEY - (+inputOffer || 0)}</strong>
+                    </p>
+                  </div>
                   <div className="offer-input-container">
                     <input
                       type="number"
                       value={inputOffer}
-                      onChange={(e) => setInputOffer(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Allow empty string for clearing the input
+                        if (value === '') {
+                          setInputOffer('');
+                          return;
+                        }
+                        
+                        // Convert to number and validate
+                        const numValue = Number(value);
+                        
+                        // Only allow values between 0 and TOTAL_MONEY (100)
+                        if (!isNaN(numValue) && numValue >= 0 && numValue <= TOTAL_MONEY) {
+                          setInputOffer(value);
+                        }
+                        // If value is greater than TOTAL_MONEY, set it to TOTAL_MONEY
+                        else if (!isNaN(numValue) && numValue > TOTAL_MONEY) {
+                          setInputOffer(TOTAL_MONEY.toString());
+                        }
+                      }}
                       min="0"
                       max={TOTAL_MONEY}
+                      step="1"
                       placeholder="0"
                       className="offer-input"
                       autoFocus
+                      onKeyDown={(e) => {
+                        // Prevent entering 'e', 'E', '+', '-' which are valid in number inputs but not wanted here
+                        if (['e', 'E', '+', '-'].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
                     />
                     <div className="dollar-sign">$</div>
                   </div>
@@ -404,13 +443,18 @@ export default function GamePage() {
                     SUBMIT OFFER
                   </button>
                   
-                  {/* Show offer status */}
+                  {/* Show offer status - UPDATED to show coins breakdown */}
                   {gameState?.currentRoundState && (
                     <div className="simultaneous-offers">
                       <div className={`offer-status-card ${gameState.currentRoundState.player1OfferMade ? 'completed' : 'pending'}`}>
-                        <div className="offer-status-title">Player 1 Offer</div>
+                        <div className="offer-status-title">Player 1</div>
                         <div className="offer-status-amount">
-                          {gameState.currentRoundState.player1OfferMade ? `$${gameState.currentRoundState.player1Offer}` : "Pending..."}
+                          {gameState.currentRoundState.player1OfferMade ? (
+                            <>
+                              <div>Offers: ${gameState.currentRoundState.player1CoinsToOffer}</div>
+                              <div>Keeps: ${gameState.currentRoundState.player1CoinsToKeep}</div>
+                            </>
+                          ) : "Pending..."}
                         </div>
                         <div className={`offer-status-indicator ${gameState.currentRoundState.player1OfferMade ? 'completed' : 'pending'}`}>
                           {gameState.currentRoundState.player1OfferMade ? "Complete" : "Waiting"}
@@ -418,9 +462,14 @@ export default function GamePage() {
                       </div>
                       
                       <div className={`offer-status-card ${gameState.currentRoundState.player2OfferMade ? 'completed' : 'pending'}`}>
-                        <div className="offer-status-title">Player 2 Offer</div>
+                        <div className="offer-status-title">Player 2</div>
                         <div className="offer-status-amount">
-                          {gameState.currentRoundState.player2OfferMade ? `$${gameState.currentRoundState.player2Offer}` : "Pending..."}
+                          {gameState.currentRoundState.player2OfferMade ? (
+                            <>
+                              <div>Offers: ${gameState.currentRoundState.player2CoinsToOffer}</div>
+                              <div>Keeps: ${gameState.currentRoundState.player2CoinsToKeep}</div>
+                            </>
+                          ) : "Pending..."}
                         </div>
                         <div className={`offer-status-indicator ${gameState.currentRoundState.player2OfferMade ? 'completed' : 'pending'}`}>
                           {gameState.currentRoundState.player2OfferMade ? "Complete" : "Waiting"}
@@ -431,22 +480,27 @@ export default function GamePage() {
                 </div>
               )}
 
-              {/* Responding phase */}
+              {/* Responding phase - UPDATED to show new logic */}
               {currentPhase === "responding" && gameState?.currentRoundState && (
                 <div className="responding-section">
                   <h3>Respond to Offers:</h3>
                   
-                  {/* Response to opponent's offer */}
-                  {isPlayer1 && gameState.currentRoundState.player2Offer !== null && (
+                  {/* Response to opponent's offer - UPDATED */}
+                  {isPlayer1 && gameState.currentRoundState.player2CoinsToOffer !== null && (
                     <div className="offer-response-card">
                       <div className="offer-display">
                         <p className="offer-label">Player 2 offers you:</p>
-                        <p className="offer-amount-large">${gameState.currentRoundState.player2Offer}</p>
+                        <p className="offer-amount-large">${gameState.currentRoundState.player2CoinsToOffer}</p>
                         <div className="decision-info">
                           <p className="keep-amount">
-                            If you accept: You get ${gameState.currentRoundState.player2Offer}
+                            You always keep: ${gameState.currentRoundState.player1CoinsToKeep || 0}
                           </p>
-                          <p className="keep-amount">If you reject: You get $0</p>
+                          <p className="keep-amount">
+                            If you accept: You get ${(gameState.currentRoundState.player1CoinsToKeep || 0) + gameState.currentRoundState.player2CoinsToOffer} total
+                          </p>
+                          <p className="keep-amount">
+                            If you reject: You get ${gameState.currentRoundState.player1CoinsToKeep || 0} total
+                          </p>
                         </div>
                       </div>
                       
@@ -477,16 +531,21 @@ export default function GamePage() {
                     </div>
                   )}
 
-                  {isPlayer2 && gameState.currentRoundState.player1Offer !== null && (
+                  {isPlayer2 && gameState.currentRoundState.player1CoinsToOffer !== null && (
                     <div className="offer-response-card">
                       <div className="offer-display">
                         <p className="offer-label">Player 1 offers you:</p>
-                        <p className="offer-amount-large">${gameState.currentRoundState.player1Offer}</p>
+                        <p className="offer-amount-large">${gameState.currentRoundState.player1CoinsToOffer}</p>
                         <div className="decision-info">
                           <p className="keep-amount">
-                            If you accept: You get ${gameState.currentRoundState.player1Offer}
+                            You always keep: ${gameState.currentRoundState.player2CoinsToKeep || 0}
                           </p>
-                          <p className="keep-amount">If you reject: You get $0</p>
+                          <p className="keep-amount">
+                            If you accept: You get ${(gameState.currentRoundState.player2CoinsToKeep || 0) + gameState.currentRoundState.player1CoinsToOffer} total
+                          </p>
+                          <p className="keep-amount">
+                            If you reject: You get ${gameState.currentRoundState.player2CoinsToKeep || 0} total
+                          </p>
                         </div>
                       </div>
                       
