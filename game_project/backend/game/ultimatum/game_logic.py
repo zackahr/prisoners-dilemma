@@ -1,14 +1,48 @@
 from .models import UltimatumGameRound
 from django.utils import timezone
 
-def calculate_simultaneous_payoff(p1_offer, p2_offer, p1_response, p2_response):
+def calculate_simultaneous_payoff(p1_coins_to_keep, p1_coins_to_offer, p2_coins_to_keep, p2_coins_to_offer, p1_response, p2_response):
     """
-    Calculate payoffs for simultaneous offers:
-    - P1 gets p2_offer if they accept P2's offer, otherwise 0
-    - P2 gets p1_offer if they accept P1's offer, otherwise 0
+    Calculate payoffs for simultaneous offers with the EXACT specification logic:
+    
+    Special case 1: If BOTH players reject, both get 0 coins
+    Special case 2: If BOTH players accept, both get their kept coins + accepted offer (additive)
+    
+    Otherwise (one accepts, one rejects):
+    - If you REJECT: You get your coins_to_keep
+    - If you ACCEPT: You get the other player's coins_to_offer (NOT additive)
+    
+    Examples from specification:
+    1. P1 rejects, P2 accepts: P1 gets 30 (kept), P2 gets 70 (P1's offer)
+    2. P1 accepts, P2 rejects: P1 gets 90 (P2's offer), P2 gets 10 (kept)
+    3. Both reject: P1 gets 0, P2 gets 0
+    4. Both accept: P1 gets 120 (30 kept + 90 accepted), P2 gets 80 (10 kept + 70 accepted)
     """
-    p1_coins = p2_offer if p1_response == "accept" else 0
-    p2_coins = p1_offer if p2_response == "accept" else 0
+    
+    # Special case 1: If both players reject, both get 0
+    if p1_response == "reject" and p2_response == "reject":
+        return 0, 0, 0
+    
+    # Special case 2: If both players accept, both get additive bonus
+    if p1_response == "accept" and p2_response == "accept":
+        p1_coins = p1_coins_to_keep + p2_coins_to_offer  # P1 keeps their coins + gets P2's offer
+        p2_coins = p2_coins_to_keep + p1_coins_to_offer  # P2 keeps their coins + gets P1's offer
+        total_coins = p1_coins + p2_coins
+        return p1_coins, p2_coins, total_coins
+    
+    # Mixed cases (one accepts, one rejects): either/or logic
+    # Player 1's coins: either their kept coins (if reject) OR P2's offer (if accept)
+    if p1_response == "accept":
+        p1_coins = p2_coins_to_offer  # P1 accepts P2's offer, gets P2's offer amount only
+    else:
+        p1_coins = p1_coins_to_keep   # P1 rejects P2's offer, gets their kept amount
+    
+    # Player 2's coins: either their kept coins (if reject) OR P1's offer (if accept)
+    if p2_response == "accept":
+        p2_coins = p1_coins_to_offer  # P2 accepts P1's offer, gets P1's offer amount only
+    else:
+        p2_coins = p2_coins_to_keep   # P2 rejects P1's offer, gets their kept amount
+    
     total_coins = p1_coins + p2_coins
     
     return p1_coins, p2_coins, total_coins
@@ -18,8 +52,8 @@ def calculate_match_statistics(match_uuid, current_round_number):
     completed_rounds = UltimatumGameRound.objects.filter(
         game_match_uuid=match_uuid,
         round_number__lte=current_round_number,
-        player_1_offer__isnull=False,
-        player_2_offer__isnull=False,
+        player_1_coins_to_offer__isnull=False,
+        player_2_coins_to_offer__isnull=False,
         player_1_response_to_p2_offer__isnull=False,
         player_2_response_to_p1_offer__isnull=False
     ).order_by('round_number')
@@ -40,7 +74,7 @@ def calculate_match_statistics(match_uuid, current_round_number):
             total_accepts += 1
         if r.player_2_response_to_p1_offer == 'accept':
             total_accepts += 1
-        total_offers += r.player_1_offer + r.player_2_offer
+        total_offers += r.player_1_coins_to_offer + r.player_2_coins_to_offer
     
     match_acceptance_rate = (total_accepts / total_possible_accepts) * 100 if total_possible_accepts > 0 else 0
     match_average_offer = total_offers / (total_rounds * 2) if total_rounds > 0 else 0
@@ -55,7 +89,7 @@ def calculate_match_statistics(match_uuid, current_round_number):
             current_accepts += 1
         
         round_acceptance = (current_accepts / 2) * 100
-        round_offer = (current_round.player_1_offer + current_round.player_2_offer) / 2
+        round_offer = (current_round.player_1_coins_to_offer + current_round.player_2_coins_to_offer) / 2
     else:
         round_acceptance = 0
         round_offer = 0
@@ -76,13 +110,21 @@ def update_game_stats(match_uuid, round_number):
     if not current_round.is_round_complete():
         return
     
-    # Calculate round payoff
+    # Calculate round payoff using EXACT specification logic
     p1_coins, p2_coins, total_coins = calculate_simultaneous_payoff(
-        current_round.player_1_offer,
-        current_round.player_2_offer,
+        current_round.player_1_coins_to_keep,
+        current_round.player_1_coins_to_offer,
+        current_round.player_2_coins_to_keep,
+        current_round.player_2_coins_to_offer,
         current_round.player_1_response_to_p2_offer,
         current_round.player_2_response_to_p1_offer
     )
+    
+    # Log the payoff calculation for debugging
+    print(f"[update_game_stats] Round {round_number} payoff calculation:")
+    print(f"  P1: keep={current_round.player_1_coins_to_keep}, offer={current_round.player_1_coins_to_offer}, response_to_p2={current_round.player_1_response_to_p2_offer}")
+    print(f"  P2: keep={current_round.player_2_coins_to_keep}, offer={current_round.player_2_coins_to_offer}, response_to_p1={current_round.player_2_response_to_p1_offer}")
+    print(f"  Result: P1 gets {p1_coins}, P2 gets {p2_coins}, Total: {total_coins}")
     
     current_round.player_1_coins_made_in_round = p1_coins
     current_round.player_2_coins_made_in_round = p2_coins
@@ -129,6 +171,8 @@ def update_game_stats(match_uuid, round_number):
         )
     
     current_round.save()
+    
+    print(f"[update_game_stats] Round {round_number} completed. Cumulative scores: P1={p1_cumulative}, P2={p2_cumulative}")
 
 def cleanup_incomplete_matches():
     """Clean up incomplete matches"""

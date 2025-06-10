@@ -127,12 +127,28 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
         # Handle make offer
         if action == "make_offer":
             try:
-                offer = data.get("offer")
-                if offer is None or not (0 <= offer <= 100):
-                    await self.send(text_data=json.dumps({"error": "Invalid offer amount"}))
+                # Expect new format: {"coins_to_keep": 30, "coins_to_offer": 70}
+                coins_to_keep = data.get("coins_to_keep")
+                coins_to_offer = data.get("coins_to_offer")
+                
+                if coins_to_keep is None or coins_to_offer is None:
+                    await self.send(text_data=json.dumps({"error": "Missing coins_to_keep or coins_to_offer"}))
+                    return
+                    
+                if not (0 <= coins_to_keep <= 100) or not (0 <= coins_to_offer <= 100):
+                    await self.send(text_data=json.dumps({"error": "Invalid coin amounts"}))
+                    return
+                    
+                if coins_to_keep + coins_to_offer != 100:
+                    await self.send(text_data=json.dumps({"error": "Coins to keep + coins to offer must equal 100"}))
                     return
 
-                if not await self.process_offer(fp, offer):
+                offer_data = {
+                    "coins_to_keep": coins_to_keep,
+                    "coins_to_offer": coins_to_offer
+                }
+
+                if not await self.process_offer(fp, offer_data):
                     await self.send(text_data=json.dumps({"error": "Cannot make offer"}))
                     return
 
@@ -140,7 +156,8 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                     "type": "game_action",
                     "player_fingerprint": fp,
                     "action": "make_offer",
-                    "offer": offer,
+                    "coins_to_keep": coins_to_keep,
+                    "coins_to_offer": coins_to_offer,
                 })
 
                 # Check if bot needs to make offer
@@ -232,7 +249,8 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({
                 "player_fingerprint": event["player_fingerprint"],
                 "action": event["action"],
-                "offer": event.get("offer"),
+                "coins_to_keep": event.get("coins_to_keep"),
+                "coins_to_offer": event.get("coins_to_offer"),
                 "response": event.get("response"),
                 "target_player": event.get("target_player"),
             }))
@@ -275,8 +293,8 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             
             completed_rounds = UltimatumGameRound.objects.filter(
                 game_match_uuid=self.match_id,
-                player_1_offer__isnull=False,
-                player_2_offer__isnull=False,
+                player_1_coins_to_offer__isnull=False,
+                player_2_coins_to_offer__isnull=False,
                 player_1_response_to_p2_offer__isnull=False,
                 player_2_response_to_p1_offer__isnull=False
             ).count()
@@ -359,7 +377,11 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             return None
 
     @database_sync_to_async
-    def process_offer(self, fp, offer):
+    def process_offer(self, fp, offer_data):
+        """
+        Process offer with new structure that includes coins_to_keep and coins_to_offer
+        offer_data should be: {"coins_to_keep": 30, "coins_to_offer": 70}
+        """
         try:
             current_round = UltimatumGameRound.objects.filter(
                 game_match_uuid=self.match_id
@@ -374,23 +396,37 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 round_number=1
             )
 
+            # Validate that coins_to_keep + coins_to_offer = 100
+            coins_to_keep = offer_data.get("coins_to_keep")
+            coins_to_offer = offer_data.get("coins_to_offer")
+            
+            if coins_to_keep is None or coins_to_offer is None:
+                logger.warning(f"Missing coins_to_keep or coins_to_offer in offer")
+                return False
+                
+            if coins_to_keep + coins_to_offer != 100:
+                logger.warning(f"Invalid offer: coins_to_keep ({coins_to_keep}) + coins_to_offer ({coins_to_offer}) != 100")
+                return False
+
             # Determine which player is making the offer
             if fp == first_round.player_1_fingerprint:
-                if current_round.player_1_offer is not None:
+                if current_round.player_1_coins_to_offer is not None:
                     logger.warning(f"Player 1 already made offer in round {current_round.round_number}")
                     return False
-                current_round.player_1_offer = offer
+                current_round.player_1_coins_to_keep = coins_to_keep
+                current_round.player_1_coins_to_offer = coins_to_offer
             elif fp == first_round.player_2_fingerprint:
-                if current_round.player_2_offer is not None:
+                if current_round.player_2_coins_to_offer is not None:
                     logger.warning(f"Player 2 already made offer in round {current_round.round_number}")
                     return False
-                current_round.player_2_offer = offer
+                current_round.player_2_coins_to_keep = coins_to_keep
+                current_round.player_2_coins_to_offer = coins_to_offer
             else:
                 logger.warning(f"Unknown player {fp} trying to make offer")
                 return False
 
             current_round.save()
-            logger.info(f"Offer {offer} processed for player {fp} in match {self.match_id}")
+            logger.info(f"Offer processed for player {fp}: keep={coins_to_keep}, offer={coins_to_offer}")
             return True
         except Exception as e:
             logger.error(f"Error processing offer: {e}")
@@ -414,7 +450,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
 
             # Player 1 responding to Player 2's offer
             if fp == first_round.player_1_fingerprint and target_player == "player_2":
-                if current_round.player_2_offer is None:
+                if current_round.player_2_coins_to_offer is None:
                     logger.warning(f"Player 2 hasn't made offer yet")
                     return False
                 if current_round.player_1_response_to_p2_offer is not None:
@@ -424,7 +460,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 
             # Player 2 responding to Player 1's offer  
             elif fp == first_round.player_2_fingerprint and target_player == "player_1":
-                if current_round.player_1_offer is None:
+                if current_round.player_1_coins_to_offer is None:
                     logger.warning(f"Player 1 hasn't made offer yet")
                     return False
                 if current_round.player_2_response_to_p1_offer is not None:
@@ -545,13 +581,15 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             total_p1_score = sum(r.player_1_coins_made_in_round for r in completed_rounds)
             total_p2_score = sum(r.player_2_coins_made_in_round for r in completed_rounds)
             
-            # Build history
+            # Build history with new fields
             history = []
             for r in completed_rounds:
                 history.append({
                     "roundNumber": r.round_number,
-                    "player1Offer": r.player_1_offer,
-                    "player2Offer": r.player_2_offer,
+                    "player1CoinsToKeep": r.player_1_coins_to_keep,
+                    "player1CoinsToOffer": r.player_1_coins_to_offer,
+                    "player2CoinsToKeep": r.player_2_coins_to_keep,
+                    "player2CoinsToOffer": r.player_2_coins_to_offer,
                     "player1ResponseToP2": r.player_1_response_to_p2_offer,
                     "player2ResponseToP1": r.player_2_response_to_p1_offer,
                     "player1Earned": r.player_1_coins_made_in_round,
@@ -576,12 +614,14 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 "player2Fingerprint": first_round.player_2_fingerprint,
                 "currentRoundState": {
                     "roundNumber": current_round.round_number,
-                    "player1OfferMade": current_round.player_1_offer is not None,
-                    "player2OfferMade": current_round.player_2_offer is not None,
+                    "player1OfferMade": current_round.player_1_coins_to_offer is not None,
+                    "player2OfferMade": current_round.player_2_coins_to_offer is not None,
                     "player1ResponseMade": current_round.player_1_response_to_p2_offer is not None,
                     "player2ResponseMade": current_round.player_2_response_to_p1_offer is not None,
-                    "player1Offer": current_round.player_1_offer,
-                    "player2Offer": current_round.player_2_offer,
+                    "player1CoinsToKeep": current_round.player_1_coins_to_keep,
+                    "player1CoinsToOffer": current_round.player_1_coins_to_offer,
+                    "player2CoinsToKeep": current_round.player_2_coins_to_keep,
+                    "player2CoinsToOffer": current_round.player_2_coins_to_offer,
                     "player1Response": current_round.player_1_response_to_p2_offer,
                     "player2Response": current_round.player_2_response_to_p1_offer,
                 }
@@ -596,19 +636,26 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             current_round = await self.get_current_round()
             if (current_round and current_round.game_mode == "bot" and 
                 current_round.player_2_fingerprint == "bot" and 
-                current_round.player_2_offer is None):
+                current_round.player_2_coins_to_offer is None):
                 
                 await asyncio.sleep(1.0)  # Bot thinking time
-                offer = random.randint(20, 50)
+                coins_to_offer = random.randint(20, 50)
+                coins_to_keep = 100 - coins_to_offer
                 
-                if await self.process_offer("bot", offer):
+                offer_data = {
+                    "coins_to_keep": coins_to_keep,
+                    "coins_to_offer": coins_to_offer
+                }
+                
+                if await self.process_offer("bot", offer_data):
                     await self.channel_layer.group_send(self.room_group_name, {
                         "type": "game_action",
                         "player_fingerprint": "bot",
                         "action": "make_offer",
-                        "offer": offer,
+                        "coins_to_keep": coins_to_keep,
+                        "coins_to_offer": coins_to_offer,
                     })
-                    logger.info(f"Bot made offer {offer} in match {self.match_id}")
+                    logger.info(f"Bot made offer: keep={coins_to_keep}, offer={coins_to_offer}")
         except Exception as e:
             logger.error(f"Error making bot offer: {e}")
 
@@ -619,11 +666,11 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 current_round.player_2_fingerprint == "bot"):
                 
                 # Bot responds to player 1's offer
-                if (current_round.player_1_offer is not None and 
+                if (current_round.player_1_coins_to_offer is not None and 
                     current_round.player_2_response_to_p1_offer is None):
                     
                     await asyncio.sleep(1.0)  # Bot thinking time
-                    response = "accept" if current_round.player_1_offer >= 30 else "reject"
+                    response = "accept" if current_round.player_1_coins_to_offer >= 30 else "reject"
                     
                     if await self.process_response("bot", "player_1", response):
                         await self.channel_layer.group_send(self.room_group_name, {
@@ -633,6 +680,6 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                             "target_player": "player_1",
                             "response": response,
                         })
-                        logger.info(f"Bot responded {response} to player 1's offer {current_round.player_1_offer}")
+                        logger.info(f"Bot responded {response} to player 1's offer {current_round.player_1_coins_to_offer}")
         except Exception as e:
             logger.error(f"Error making bot response: {e}")

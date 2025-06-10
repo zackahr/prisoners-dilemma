@@ -54,15 +54,10 @@ clean:
 # Clean up containers, volumes, and prune unused Docker resources
 fclean:
 	@echo "$(RED)Cleaning up containers and volumes...$(RESET)"
-	docker-compose down -v --remove-orphans
-	docker volume prune -af
-	docker image prune -af
-	docker system prune -af
-
-# Rebuild and start all services
-re: fclean all
-	@echo "$(GREEN)Rebuilding and restarting all services...$(RESET)"
-	docker-compose up --build -d
+	docker image prune -f
+	docker volume prune -f
+	docker image prune -f
+	docker system prune -f
 
 # Show status of all services
 status:
@@ -72,7 +67,12 @@ status:
 # Follow logs for all services
 logs:
 	@echo "$(BLUE)Following logs of all services...$(RESET)"
-	docker-compose logs -f
+	docker-compose logs -ff
+
+# Rebuild and start all services
+re: fclean all
+	@echo "$(GREEN)Rebuilding and restarting all services...$(RESET)"
+	docker-compose up --build -d
 
 # Stop all running services
 stop:
