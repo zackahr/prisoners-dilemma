@@ -7,9 +7,9 @@ SELECT
     gm.player_2_fingerprint,
     gr.player_2_action,
     gr.player_2_score,
-    gr.player_1_cooperation_percent,  -- Already formatted in Python
-    gr.player_2_cooperation_percent,  -- Already formatted in Python
-    gr.avg_cooperation_percent,       -- Already formatted in Python
+    gr.player_1_cooperation_percent,  
+    gr.player_2_cooperation_percent,  
+    gr.avg_cooperation_percent,       
     gr.player_1_cumulative_score,
     gr.player_2_cumulative_score,
     gm.player_1_country,
