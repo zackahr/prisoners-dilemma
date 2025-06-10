@@ -10,6 +10,8 @@ export const useWebSocket = (matchId, playerFingerprint) => {
   const reconnectAttemptsRef = useRef(0)
   const connectionRef = useRef(null)
   const maxReconnectAttempts = 5
+  const OFFER_TIME_LIMIT = 15;
+  const [terminationReason, setTerminationReason]   = useState(null);  // NEW
 
   const connect = useCallback(() => {
     if (!matchId || !playerFingerprint) {
@@ -67,6 +69,7 @@ export const useWebSocket = (matchId, playerFingerprint) => {
             setMatchTerminated(true)
             setError(`Match ended: ${data.reason}`)
             reconnectAttemptsRef.current = maxReconnectAttempts
+            setTerminationReason(data.reason);
             return
           }
 
@@ -167,6 +170,7 @@ export const useWebSocket = (matchId, playerFingerprint) => {
         if (event.code === 4001) {
           setError("Match terminated by server")
           setMatchTerminated(true)
+          setTerminationReason(event.reason || "timeout");
           console.log("🚫 Match terminated by server - not attempting to reconnect")
           return
         }
@@ -267,6 +271,7 @@ export const useWebSocket = (matchId, playerFingerprint) => {
     connectionStatus,
     error,
     matchTerminated,
+    terminationReason,
     sendMessage,
     connect,
     disconnect,

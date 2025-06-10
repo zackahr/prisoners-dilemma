@@ -1201,3 +1201,88 @@
     font-size: 1.25rem;
   }
 }
+
+
+
+
+
+
+
+/* Add these to your existing GamePage.css */
+
+.timeout-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.timeout-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.timeout-icon {
+  width: 4rem;
+  height: 4rem;
+  color: #f59e0b;
+  margin-bottom: 1rem;
+}
+
+.timeout-content h2 {
+  margin-bottom: 1rem;
+  color: #1f2937;
+}
+
+.timeout-content p {
+  margin-bottom: 1rem;
+  color: #6b7280;
+}
+
+.timeout-button {
+  background: #3b82f6;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.timeout-button:hover {
+  background: #2563eb;
+}
+
+.timer-warning {
+  color: #ef4444;
+  font-weight: bold;
+  margin-left: 0.5rem;
+}
+
+.timeout-warning {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.timeout-warning p {
+  color: #dc2626;
+  font-weight: 600;
+  margin: 0;
+}
+
+

@@ -1,21 +1,19 @@
-import json
-import asyncio
-import logging
-from django.utils import timezone
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
 from .models import UltimatumGameRound
 from .game_logic import update_game_stats
 import random
-
+import json, asyncio, logging 
 logger = logging.getLogger(__name__)
+PROPOSER_TIMEOUT = 15
 
 class UltimatumGameConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         self.match_id = self.scope["url_route"]["kwargs"]["match_id"]
-        self.player_fingerprint = None          
+        self.player_fingerprint = None  
+        self.offer_timeout_task = None        
         self.match_exists = await self.check_match_exists(self.match_id)
         
         if not self.match_exists:
@@ -29,16 +27,65 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
         await self.accept()
         try:
             game_state = await self.get_game_state()
+            
             await self.send(text_data=json.dumps({
                 "game_state": game_state
             }))
+            # await self.start_offer_timeout()
             logger.info(f"Player connected to match {self.match_id}")
         except Exception as e:
             logger.error(f"Error sending initial game state: {e}")
             await self.send(text_data=json.dumps({
                 "error": "Failed to load game state"
             }))
+    # TIME-OUT HELPERS
+    async def start_offer_timeout(self):
+        """(Re)start a 15-second timer for this socket instance."""
+        await self.cancel_offer_timeout()
+        self.offer_timeout_task = asyncio.create_task(self._offer_timeout_loop())
 
+    async def cancel_offer_timeout(self):
+        if self.offer_timeout_task and not self.offer_timeout_task.done():
+            self.offer_timeout_task.cancel()
+        self.offer_timeout_task = None
+
+    async def _offer_timeout_loop(self):
+        try:
+            await asyncio.sleep(PROPOSER_TIMEOUT)
+            current_round = await self.get_current_round()
+            if not current_round:                       # safety-net
+                return
+
+            # Decide whether *this* player still owes an offer
+            first = await database_sync_to_async(
+                lambda: UltimatumGameRound.objects.get(
+                    game_match_uuid=self.match_id, round_number=1
+                )
+            )()
+
+            needs_offer = (
+                (self.player_fingerprint == first.player_1_fingerprint and
+                 current_round.player_1_offer is None)
+                or
+                (self.player_fingerprint == first.player_2_fingerprint and
+                 current_round.player_2_offer is None)
+            )
+            if needs_offer:
+                await self.handle_player_timeout()
+        except asyncio.CancelledError:
+            pass    # normal path when player makes an offer
+
+    async def handle_player_timeout(self):
+        logging.warning("Player %s timed-out in match %s",
+                        self.player_fingerprint, self.match_id)
+
+        await self.channel_layer.group_send(self.room_group_name, {
+            "type": "match_terminated",
+            "reason": "timeout",
+            "disconnected_player": self.player_fingerprint,
+        })
+        await self.close(code=4001)
+    # --------------------------------------------------------------
     async def disconnect(self, code):
         logger.info(f"Player {getattr(self, 'player_fingerprint', 'unknown')} disconnecting from match {self.match_id} with code {code}")
         
@@ -118,6 +165,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                     "type": "game_state_update",
                     "game_state": updated_game_state,
                 })
+                await self.start_offer_timeout()
                 return
             except Exception as e:
                 logger.error(f"Error handling join: {e}")
@@ -135,7 +183,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 if not await self.process_offer(fp, offer):
                     await self.send(text_data=json.dumps({"error": "Cannot make offer"}))
                     return
-
+                await self.cancel_offer_timeout()
                 await self.channel_layer.group_send(self.room_group_name, {
                     "type": "game_action",
                     "player_fingerprint": fp,
@@ -163,7 +211,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 if not await self.process_response(fp, target_player, response):
                     await self.send(text_data=json.dumps({"error": "Cannot respond to offer"}))
                     return
-
+                await self.cancel_offer_timeout()
                 await self.channel_layer.group_send(self.room_group_name, {
                     "type": "game_action",
                     "player_fingerprint": fp,
@@ -203,6 +251,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                                 "type": "game_state_update",
                                 "game_state": updated_gs,
                             })
+                            await self.start_offer_timeout()
 
             except Exception as e:
                 logger.error(f"Error processing response: {e}")
@@ -602,6 +651,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 offer = random.randint(20, 50)
                 
                 if await self.process_offer("bot", offer):
+                    await self.cancel_offer_timeout()
                     await self.channel_layer.group_send(self.room_group_name, {
                         "type": "game_action",
                         "player_fingerprint": "bot",
@@ -626,6 +676,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                     response = "accept" if current_round.player_1_offer >= 30 else "reject"
                     
                     if await self.process_response("bot", "player_1", response):
+                        await self.cancel_offer_timeout()
                         await self.channel_layer.group_send(self.room_group_name, {
                             "type": "game_action",
                             "player_fingerprint": "bot",

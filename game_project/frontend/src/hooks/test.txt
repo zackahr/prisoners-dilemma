@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+can I update just the front end when a player don't submit offer in 15 second must redirect him to /ultimatum this is GamePage.jsx : import { useState, useEffect, useCallback } from "react"
 import {
   Clock,
   DollarSign,
@@ -17,7 +17,6 @@ import "./GamePage.css"
 
 const MAX_ROUNDS = 25
 const TOTAL_MONEY = 100
-const OFFER_TIME_LIMIT = 15
 
 export default function GamePage() {
   const navigate = useNavigate()
@@ -32,14 +31,11 @@ export default function GamePage() {
 
   // Game state for simultaneous play
   const [inputOffer, setInputOffer] = useState("")
-  const [timeLeft, setTimeLeft] = useState(OFFER_TIME_LIMIT)
+  const [timeLeft, setTimeLeft] = useState(30)
   const [currentPhase, setCurrentPhase] = useState("waiting") // "waiting" | "offering" | "responding" | "result"
 
-  const {
-    gameState, connectionStatus, error,
-    matchTerminated, terminationReason,
-    sendMessage
-  } = useWebSocket(matchId, playerFingerprint);
+  const { gameState, connectionStatus, error, sendMessage } =
+    useWebSocket(matchId, playerFingerprint)
 
   // Initialize match
   useEffect(() => {
@@ -68,14 +64,6 @@ export default function GamePage() {
     initializeMatch()
   }, [gameMode, playerFingerprint, urlMatchId])
 
-  // Handle match termination
-  useEffect(() => {
-    if (matchTerminated) {
-      const t = setTimeout(() => navigate("/ultimatum"), 2000);
-      return () => clearTimeout(t);
-    }
-  }, [matchTerminated, navigate]);
-
   // Determine current phase based on game state
   useEffect(() => {
     if (!gameState) return
@@ -94,9 +82,10 @@ export default function GamePage() {
 
     const currentRound = gameState.currentRoundState
     if (!currentRound) {
-      // First frame of a fresh round → make my offer
+      // If no current round state, default to offering phase
+      console.log("🎯 No current round state, defaulting to offering phase")
       setCurrentPhase("offering")
-      setTimeLeft(OFFER_TIME_LIMIT)
+      setTimeLeft(30)
       return
     }
 
@@ -119,32 +108,27 @@ export default function GamePage() {
       currentRound
     })
 
-    // Priority 1 – make my offer
+    // Priority 1: If I haven't made my offer yet, I should be offering
     if (!myOfferMade) {
+      console.log("🎯 Setting phase to offering - my offer not made")
       setCurrentPhase("offering")
-      setTimeLeft(OFFER_TIME_LIMIT)
+      setTimeLeft(30)
       return
     }
 
-    // Priority 2 – respond to opponent
+    // Priority 2: If both offers are made but I haven't responded, I should be responding
     if (bothOffersMade && !myResponseMade) {
+      console.log("🎯 Setting phase to responding - both offers made, my response not made")
       setCurrentPhase("responding")
-      setTimeLeft(OFFER_TIME_LIMIT)
+      setTimeLeft(30)
       return
     }
+
     // Priority 3: Otherwise, I'm waiting
     console.log("🎯 Setting phase to waiting - all my actions complete")
     setCurrentPhase("waiting")
     setTimeLeft(15)
   }, [gameState, playerFingerprint])
-
-  // Handle timeout navigation
-  useEffect(() => {
-    if (timeLeft <= 0 &&
-        (currentPhase === "offering" || currentPhase === "responding")) {
-      navigate("/ultimatum");
-    }
-  }, [timeLeft, currentPhase, navigate]);
 
   // Timer countdown
   useEffect(() => {
@@ -190,26 +174,6 @@ export default function GamePage() {
   // Helper to get current player info
   const isPlayer1 = gameState?.player1Fingerprint === playerFingerprint
   const isPlayer2 = gameState?.player2Fingerprint === playerFingerprint
-
-  // Handle match termination UI
-  if (matchTerminated) {
-    return (
-      <div className="game-page">
-        <div className="game-container">
-          <div className="error-section">
-            <XCircle className="error-icon" />
-            <h2>Opponent Disconnected</h2>
-            <p>
-              {terminationReason === "timeout"
-                ? "Your opponent ran out of time."
-                : "Your opponent left the match."}
-            </p>
-            <p>You'll be returned to the menu…</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Show loading spinner
   if (isInitializing || !matchId) {
@@ -302,7 +266,7 @@ export default function GamePage() {
             </button>
           </div>
 
-          {/* <PayoffsTable history={gameState.roundHistory || []} /> */}
+          <PayoffsTable history={gameState.roundHistory || []} />
         </div>
       </div>
     )
@@ -603,4 +567,277 @@ export default function GamePage() {
       </div>
     </div>
   )
+}  and this is useWebSocket.js : import { useState, useEffect, useRef, useCallback } from "react"
+
+export const useWebSocket = (matchId, playerFingerprint) => {
+  const [socket, setSocket] = useState(null)
+  const [gameState, setGameState] = useState(null)
+  const [connectionStatus, setConnectionStatus] = useState("disconnected")
+  const [error, setError] = useState(null)
+  const [matchTerminated, setMatchTerminated] = useState(false)
+  const reconnectTimeoutRef = useRef(null)
+  const reconnectAttemptsRef = useRef(0)
+  const connectionRef = useRef(null)
+  const maxReconnectAttempts = 5
+
+  const connect = useCallback(() => {
+    if (!matchId || !playerFingerprint) {
+      console.log("❌ Cannot connect: missing matchId or playerFingerprint")
+      return
+    }
+
+    if (matchTerminated) {
+      console.log("❌ Match was terminated - not reconnecting")
+      return
+    }
+
+    if (connectionRef.current === "connecting" || connectionRef.current === "connected") {
+      console.log("⚠️ Connection already in progress or established")
+      return
+    }
+
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current)
+      reconnectTimeoutRef.current = null
+    }
+
+    try {
+      const wsUrl = `ws://localhost:8001/ws/ultimatum-game/${matchId}/`
+      console.log("🔌 Connecting to WebSocket:", wsUrl)
+      console.log("👤 Player fingerprint:", playerFingerprint)
+
+      connectionRef.current = "connecting"
+      setConnectionStatus("connecting")
+      
+      const ws = new WebSocket(wsUrl)
+
+      ws.onopen = () => {
+        console.log("✅ WebSocket connected successfully")
+        setConnectionStatus("connected")
+        connectionRef.current = "connected"
+        setError(null)
+        reconnectAttemptsRef.current = 0
+
+        const joinMessage = {
+          action: "join",
+          player_fingerprint: playerFingerprint,
+        }
+        console.log("📤 Sending join message:", joinMessage)
+        ws.send(JSON.stringify(joinMessage))
+      }
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          console.log("📥 Received WebSocket message:", data)
+
+          if (data.match_terminated) {
+            console.log("🚫 Match terminated:", data.reason)
+            setMatchTerminated(true)
+            setError(`Match ended: ${data.reason}`)
+            reconnectAttemptsRef.current = maxReconnectAttempts
+            return
+          }
+
+          if (data.error) {
+            console.error("❌ Server error:", data.error)
+            setError(data.error)
+            
+            const criticalErrors = ["full", "already started", "Cannot join match"]
+            if (criticalErrors.some(err => data.error.includes(err))) {
+              reconnectAttemptsRef.current = maxReconnectAttempts
+            }
+            return
+          }
+
+          if (data.game_state) {
+            console.log("🎮 Game state update:", data.game_state)
+            setGameState(data.game_state)
+            
+            if (data.game_state && !data.game_state.error) {
+              setError(null)
+            }
+          }
+
+          if (data.game_over) {
+            console.log("🏁 Game over:", data)
+            setGameState((prev) => ({
+              ...prev,
+              gameOver: true,
+              player1Score: data.player1_score || 0,
+              player2Score: data.player2_score || 0,
+            }))
+          }
+
+          // Handle simultaneous game actions
+          if (data.action) {
+            console.log("🎯 Player action:", data)
+            setGameState((prev) => {
+              if (!prev) return prev
+
+              const updated = { ...prev }
+
+              if (data.action === "make_offer") {
+                // Update the appropriate player's offer in current round state
+                if (data.player_fingerprint === prev.player1Fingerprint) {
+                  updated.currentRoundState = {
+                    ...updated.currentRoundState,
+                    player1OfferMade: true,
+                    player1Offer: data.offer,
+                  }
+                } else if (data.player_fingerprint === prev.player2Fingerprint) {
+                  updated.currentRoundState = {
+                    ...updated.currentRoundState,
+                    player2OfferMade: true,
+                    player2Offer: data.offer,
+                  }
+                }
+                console.log("💰 Offer made:", data.offer, "by player:", data.player_fingerprint)
+              }
+
+              if (data.action === "respond_to_offer") {
+                // Update the appropriate response based on target_player
+                if (data.player_fingerprint === prev.player1Fingerprint && data.target_player === "player_2") {
+                  updated.currentRoundState = {
+                    ...updated.currentRoundState,
+                    player1ResponseMade: true,
+                    player1Response: data.response,
+                  }
+                } else if (data.player_fingerprint === prev.player2Fingerprint && data.target_player === "player_1") {
+                  updated.currentRoundState = {
+                    ...updated.currentRoundState,
+                    player2ResponseMade: true,
+                    player2Response: data.response,
+                  }
+                }
+                console.log("🤔 Response made:", data.response, "by player:", data.player_fingerprint, "to:", data.target_player)
+              }
+
+              return updated
+            })
+          }
+        } catch (err) {
+          console.error("❌ Error parsing WebSocket message:", err, event.data)
+        }
+      }
+
+      ws.onclose = (event) => {
+        console.log("🔌 WebSocket closed:", event.code, event.reason)
+        setConnectionStatus("disconnected")
+        connectionRef.current = "disconnected"
+        setSocket(null)
+
+        if (event.code === 4004) {
+          setError("Match not found")
+          console.log("🚫 Match not found - not attempting to reconnect")
+          return
+        }
+
+        if (event.code === 4001) {
+          setError("Match terminated by server")
+          setMatchTerminated(true)
+          console.log("🚫 Match terminated by server - not attempting to reconnect")
+          return
+        }
+
+        if (matchTerminated) {
+          console.log("🚫 Match terminated - not attempting to reconnect")
+          return
+        }
+
+        if (event.code === 1000 || reconnectAttemptsRef.current >= maxReconnectAttempts) {
+          console.log("🚫 Not attempting to reconnect")
+          return
+        }
+
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 10000)
+        console.log(
+          `🔄 Attempting to reconnect in ${delay}ms (attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`
+        )
+
+        reconnectTimeoutRef.current = setTimeout(() => {
+          reconnectAttemptsRef.current++
+          connectionRef.current = "disconnected"
+          connect()
+        }, delay)
+      }
+
+      ws.onerror = (error) => {
+        console.error("❌ WebSocket error:", error)
+        setConnectionStatus("error")
+        connectionRef.current = "error"
+        
+        if (error.code === "ECONNREFUSED") {
+          setError("Cannot connect to game server")
+        }
+      }
+
+      setSocket(ws)
+    } catch (err) {
+      console.error("❌ Failed to create WebSocket connection:", err)
+      setError("Failed to connect to game server")
+      setConnectionStatus("error")
+      connectionRef.current = "error"
+    }
+  }, [matchId, playerFingerprint, matchTerminated])
+
+  const disconnect = useCallback(() => {
+    console.log("🔌 Disconnecting WebSocket")
+    
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current)
+      reconnectTimeoutRef.current = null
+    }
+    
+    connectionRef.current = "disconnected"
+    reconnectAttemptsRef.current = maxReconnectAttempts
+    
+    if (socket && socket.readyState !== WebSocket.CLOSED) {
+      socket.close(1000, "Manual disconnect")
+    }
+    
+    setSocket(null)
+    setConnectionStatus("disconnected")
+  }, [socket])
+
+  const sendMessage = useCallback(
+    (message) => {
+      if (matchTerminated) {
+        console.log("❌ Cannot send message: match terminated")
+        return false
+      }
+
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        console.log("📤 Sending message:", message)
+        socket.send(JSON.stringify(message))
+        return true
+      } else {
+        console.error("❌ Cannot send message: WebSocket not connected")
+        setError("Not connected to game server")
+        return false
+      }
+    },
+    [socket, matchTerminated],
+  )
+
+  useEffect(() => {
+    if (matchId && playerFingerprint && !matchTerminated) {
+      connect()
+    }
+    
+    return () => {
+      disconnect()
+    }
+  }, [matchId, playerFingerprint, matchTerminated])
+
+  return {
+    socket,
+    gameState,
+    connectionStatus,
+    error,
+    matchTerminated,
+    sendMessage,
+    connect,
+    disconnect,
+  }
 }
