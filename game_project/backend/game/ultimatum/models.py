@@ -28,7 +28,12 @@ class UltimatumGameRound(models.Model):
     # Game mode
     game_mode = models.CharField(max_length=10, choices=GAME_MODES, default='online')
     
-    # Simultaneous offers from both players
+    # NEW FIELDS: What each player keeps vs offers
+    player_1_coins_to_keep = models.IntegerField(null=True, blank=True)
+    player_1_coins_to_offer = models.IntegerField(null=True, blank=True)  # This was your old player_1_offer
+    player_2_coins_to_keep = models.IntegerField(null=True, blank=True)
+    player_2_coins_to_offer = models.IntegerField(null=True, blank=True)  # This was your old player_2_offer
+    
     player_1_offer = models.IntegerField(null=True, blank=True)  
     player_2_offer = models.IntegerField(null=True, blank=True) 
     
@@ -39,7 +44,6 @@ class UltimatumGameRound(models.Model):
     player_2_coins_made_in_round = models.IntegerField(default=0)
     players_sum_coins_in_round = models.IntegerField(default=0)
     
-    # Cumulative scores
     round_player_1_cumulative_score = models.IntegerField(default=0)
     round_player_2_cumulative_score = models.IntegerField(default=0)
     players_sum_coins_total = models.IntegerField(default=0)
@@ -47,8 +51,8 @@ class UltimatumGameRound(models.Model):
     player_1_final_score = models.IntegerField(default=0)
     player_2_final_score = models.IntegerField(default=0)
     
-    round_acceptance_rate = models.FloatField(default=0)  # % of offers accepted this round
-    match_acceptance_rate = models.FloatField(default=0)  # Overall acceptance rate for match
+    round_acceptance_rate = models.FloatField(default=0)
+    match_acceptance_rate = models.FloatField(default=0)
     
     # Average offer amounts
     round_average_offer = models.FloatField(default=0)
@@ -77,8 +81,10 @@ class UltimatumGameRound(models.Model):
     def is_round_complete(self):
         """Check if all actions for this round are complete"""
         return (
-            self.player_1_offer is not None and 
-            self.player_2_offer is not None and
+            self.player_1_coins_to_keep is not None and 
+            self.player_1_coins_to_offer is not None and
+            self.player_2_coins_to_keep is not None and
+            self.player_2_coins_to_offer is not None and
             self.player_1_response_to_p2_offer is not None and
             self.player_2_response_to_p1_offer is not None
         )
@@ -93,8 +99,10 @@ class UltimatumGameRound(models.Model):
         """Get count of completed rounds for a match"""
         return cls.objects.filter(
             game_match_uuid=match_uuid,
-            player_1_offer__isnull=False,
-            player_2_offer__isnull=False,
+            player_1_coins_to_keep__isnull=False,
+            player_1_coins_to_offer__isnull=False,
+            player_2_coins_to_keep__isnull=False,
+            player_2_coins_to_offer__isnull=False,
             player_1_response_to_p2_offer__isnull=False,
             player_2_response_to_p1_offer__isnull=False
         ).count()
