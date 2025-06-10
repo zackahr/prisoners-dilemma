@@ -364,12 +364,38 @@ export default function GamePage() {
                     <input
                       type="number"
                       value={inputOffer}
-                      onChange={(e) => setInputOffer(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // Allow empty string for clearing the input
+                        if (value === '') {
+                          setInputOffer('');
+                          return;
+                        }
+                        
+                        // Convert to number and validate
+                        const numValue = Number(value);
+                        
+                        // Only allow values between 0 and TOTAL_MONEY (100)
+                        if (!isNaN(numValue) && numValue >= 0 && numValue <= TOTAL_MONEY) {
+                          setInputOffer(value);
+                        }
+                        // If value is greater than TOTAL_MONEY, set it to TOTAL_MONEY
+                        else if (!isNaN(numValue) && numValue > TOTAL_MONEY) {
+                          setInputOffer(TOTAL_MONEY.toString());
+                        }
+                      }}
                       min="0"
                       max={TOTAL_MONEY}
+                      step="1"
                       placeholder="0"
                       className="offer-input"
                       autoFocus
+                      onKeyDown={(e) => {
+                        // Prevent entering 'e', 'E', '+', '-' which are valid in number inputs but not wanted here
+                        if (['e', 'E', '+', '-'].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
                     />
                     <div className="dollar-sign">$</div>
                   </div>
