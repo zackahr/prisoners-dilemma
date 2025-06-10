@@ -2,23 +2,7 @@ from .models import UltimatumGameRound
 from django.utils import timezone
 
 def calculate_simultaneous_payoff(p1_coins_to_keep, p1_coins_to_offer, p2_coins_to_keep, p2_coins_to_offer, p1_response, p2_response):
-    """
-    Calculate payoffs for simultaneous offers with the EXACT specification logic:
-    
-    Special case 1: If BOTH players reject, both get 0 coins
-    Special case 2: If BOTH players accept, both get their kept coins + accepted offer (additive)
-    
-    Otherwise (one accepts, one rejects):
-    - If you REJECT: You get your coins_to_keep
-    - If you ACCEPT: You get the other player's coins_to_offer (NOT additive)
-    
-    Examples from specification:
-    1. P1 rejects, P2 accepts: P1 gets 30 (kept), P2 gets 70 (P1's offer)
-    2. P1 accepts, P2 rejects: P1 gets 90 (P2's offer), P2 gets 10 (kept)
-    3. Both reject: P1 gets 0, P2 gets 0
-    4. Both accept: P1 gets 120 (30 kept + 90 accepted), P2 gets 80 (10 kept + 70 accepted)
-    """
-    
+
     # Special case 1: If both players reject, both get 0
     if p1_response == "reject" and p2_response == "reject":
         return 0, 0, 0
@@ -31,7 +15,6 @@ def calculate_simultaneous_payoff(p1_coins_to_keep, p1_coins_to_offer, p2_coins_
         return p1_coins, p2_coins, total_coins
     
     # Mixed cases (one accepts, one rejects): either/or logic
-    # Player 1's coins: either their kept coins (if reject) OR P2's offer (if accept)
     if p1_response == "accept":
         p1_coins = p2_coins_to_offer  # P1 accepts P2's offer, gets P2's offer amount only
     else:
@@ -110,7 +93,6 @@ def update_game_stats(match_uuid, round_number):
     if not current_round.is_round_complete():
         return
     
-    # Calculate round payoff using EXACT specification logic
     p1_coins, p2_coins, total_coins = calculate_simultaneous_payoff(
         current_round.player_1_coins_to_keep,
         current_round.player_1_coins_to_offer,

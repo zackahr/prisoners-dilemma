@@ -34,7 +34,6 @@ class UltimatumGameRound(models.Model):
     player_2_coins_to_keep = models.IntegerField(null=True, blank=True)
     player_2_coins_to_offer = models.IntegerField(null=True, blank=True)  # This was your old player_2_offer
     
-    # Keep old fields for backward compatibility (can be removed later)
     player_1_offer = models.IntegerField(null=True, blank=True)  
     player_2_offer = models.IntegerField(null=True, blank=True) 
     
@@ -45,7 +44,6 @@ class UltimatumGameRound(models.Model):
     player_2_coins_made_in_round = models.IntegerField(default=0)
     players_sum_coins_in_round = models.IntegerField(default=0)
     
-    # Cumulative scores
     round_player_1_cumulative_score = models.IntegerField(default=0)
     round_player_2_cumulative_score = models.IntegerField(default=0)
     players_sum_coins_total = models.IntegerField(default=0)
