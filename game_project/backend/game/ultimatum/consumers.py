@@ -13,7 +13,26 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.match_id = self.scope["url_route"]["kwargs"]["match_id"]
         self.player_fingerprint = None  
-        self.offer_timeout_task = None        
+        self.offer_timeout_task = None
+        
+        # Extract IP address from the connection
+        self.client_ip = self.scope.get('client', ['unknown', None])[0]
+        if hasattr(self.scope, 'headers'):
+            for header_name, header_value in self.scope['headers']:
+                if header_name == b'x-forwarded-for':
+                    self.client_ip = header_value.decode().split(',')[0].strip()
+                    break
+                elif header_name == b'x-real-ip':
+                    self.client_ip = header_value.decode()
+                    break
+        
+        # Fallback to extracting from scope
+        if self.client_ip == 'unknown':
+            if 'forwarded' in self.scope:
+                forwarded = self.scope['forwarded']
+                if forwarded and len(forwarded) > 0:
+                    self.client_ip = forwarded[0].get('for', 'unknown')
+                    
         self.match_exists = await self.check_match_exists(self.match_id)
         
         if not self.match_exists:
@@ -32,12 +51,13 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 "game_state": game_state
             }))
             # await self.start_offer_timeout()
-            logger.info(f"Player connected to match {self.match_id}")
+            logger.info(f"Player connected to match {self.match_id} from IP {self.client_ip}")
         except Exception as e:
             logger.error(f"Error sending initial game state: {e}")
             await self.send(text_data=json.dumps({
                 "error": "Failed to load game state"
             }))
+    
     # TIME-OUT HELPERS
     async def start_offer_timeout(self):
         """(Re)start a 15-second timer for this socket instance."""
@@ -155,7 +175,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
         # Handle join
         if action == "join":
             try:
-                join_result = await self.handle_join(fp)
+                join_result = await self.handle_join_with_ip(fp, self.client_ip)
                 if not join_result:
                     await self.send(text_data=json.dumps({"error": "Cannot join match"}))
                     return
@@ -366,7 +386,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             return False
 
     @database_sync_to_async
-    def handle_join(self, fp):
+    def handle_join_with_ip(self, fp, ip_address):
         try:
             first_round = UltimatumGameRound.objects.filter(
                 game_match_uuid=self.match_id, 
@@ -379,11 +399,17 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
 
             if not first_round.player_1_fingerprint:
                 first_round.player_1_fingerprint = fp
+                first_round.player_1_ip_address = ip_address
                 first_round.save()
-                logger.info(f"Set player 1 for match {self.match_id}: {fp}")
+                logger.info(f"Set player 1 for match {self.match_id}: {fp} from IP {ip_address}")
                 return True
 
             if first_round.player_1_fingerprint == fp:
+                # Update IP if changed
+                if first_round.player_1_ip_address != ip_address:
+                    first_round.player_1_ip_address = ip_address
+                    first_round.save()
+                    logger.info(f"Updated IP for player 1 in match {self.match_id}: {ip_address}")
                 logger.info(f"Player 1 reconnected to match {self.match_id}: {fp}")
                 return True
 
@@ -393,10 +419,16 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                         logger.warning(f"Same player trying to join as both players: {fp}")
                         return False
                     first_round.player_2_fingerprint = fp
+                    first_round.player_2_ip_address = ip_address
                     first_round.save()
-                    logger.info(f"Set player 2 for match {self.match_id}: {fp}")
+                    logger.info(f"Set player 2 for match {self.match_id}: {fp} from IP {ip_address}")
                     return True
                 elif first_round.player_2_fingerprint == fp:
+                    # Update IP if changed
+                    if first_round.player_2_ip_address != ip_address:
+                        first_round.player_2_ip_address = ip_address
+                        first_round.save()
+                        logger.info(f"Updated IP for player 2 in match {self.match_id}: {ip_address}")
                     logger.info(f"Player 2 reconnected to match {self.match_id}: {fp}")
                     return True
                 else:
@@ -405,14 +437,20 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             else:  # bot mode
                 if first_round.player_2_fingerprint != "bot":
                     first_round.player_2_fingerprint = "bot"
+                    first_round.player_2_ip_address = None
                     first_round.save()
                     logger.info(f"Set bot as player 2 for match {self.match_id}")
                 return True
             
             return False
         except Exception as e:
-            logger.error(f"Error in handle_join: {e}")
+            logger.error(f"Error in handle_join_with_ip: {e}")
             return False
+
+    @database_sync_to_async
+    def handle_join(self, fp):
+        # This method is kept for backwards compatibility but uses the new IP-aware method
+        return self.handle_join_with_ip(fp, getattr(self, 'client_ip', 'unknown'))
 
     @database_sync_to_async
     def get_current_round(self):
@@ -603,6 +641,8 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 player_1_city=first_round.player_1_city,
                 player_2_country=first_round.player_2_country,
                 player_2_city=first_round.player_2_city,
+                player_1_ip_address=first_round.player_1_ip_address,  # Copy IP addresses
+                player_2_ip_address=first_round.player_2_ip_address,
             )
             logger.info(f"Created round {next_round.round_number} for match {self.match_id}")
             return True

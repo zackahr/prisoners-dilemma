@@ -25,6 +25,10 @@ class UltimatumGameRound(models.Model):
     player_2_country = models.CharField(max_length=100, blank=True, null=True, default='Unknown')
     player_2_city = models.CharField(max_length=100, blank=True, null=True, default='Unknown')
     
+  
+    player_1_ip_address = models.GenericIPAddressField(null=True, blank=True)
+    player_2_ip_address = models.GenericIPAddressField(null=True, blank=True)
+    
     # Game mode
     game_mode = models.CharField(max_length=10, choices=GAME_MODES, default='online')
     

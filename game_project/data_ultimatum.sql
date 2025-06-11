@@ -5,12 +5,14 @@ SELECT
 
 
     ugr.player_1_fingerprint,
+    ugr.player_1_ip_address,
     ugr.player_1_coins_to_keep,
     ugr.player_1_coins_to_offer,
     ugr.player_1_response_to_p2_offer,
     ugr.player_1_coins_made_in_round,
 
     ugr.player_2_fingerprint,
+    ugr.player_2_ip_address,
     ugr.player_2_coins_to_keep,
     ugr.player_2_coins_to_offer,
     ugr.player_2_response_to_p1_offer,

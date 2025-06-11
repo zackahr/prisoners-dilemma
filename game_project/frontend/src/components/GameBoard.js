@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Clock, Users, Bot, Trophy, Target, Zap, Shield } from "lucide-react"

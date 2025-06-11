@@ -3,28 +3,23 @@ from django.utils import timezone
 
 def calculate_simultaneous_payoff(p1_coins_to_keep, p1_coins_to_offer, p2_coins_to_keep, p2_coins_to_offer, p1_response, p2_response):
 
-    # Special case 1: If both players reject, both get 0
     if p1_response == "reject" and p2_response == "reject":
         return 0, 0, 0
     
-    # Special case 2: If both players accept, both get additive bonus
     if p1_response == "accept" and p2_response == "accept":
         p1_coins = p1_coins_to_keep + p2_coins_to_offer  # P1 keeps their coins + gets P2's offer
         p2_coins = p2_coins_to_keep + p1_coins_to_offer  # P2 keeps their coins + gets P1's offer
         total_coins = p1_coins + p2_coins
         return p1_coins, p2_coins, total_coins
     
-    # Mixed cases (one accepts, one rejects): either/or logic
     if p1_response == "accept":
-        p1_coins = p2_coins_to_offer  # P1 accepts P2's offer, gets P2's offer amount only
+        p1_coins = p2_coins_to_offer  
     else:
-        p1_coins = p1_coins_to_keep   # P1 rejects P2's offer, gets their kept amount
-    
-    # Player 2's coins: either their kept coins (if reject) OR P1's offer (if accept)
+        p1_coins = p1_coins_to_keep   
     if p2_response == "accept":
-        p2_coins = p1_coins_to_offer  # P2 accepts P1's offer, gets P1's offer amount only
+        p2_coins = p1_coins_to_offer 
     else:
-        p2_coins = p2_coins_to_keep   # P2 rejects P1's offer, gets their kept amount
+        p2_coins = p2_coins_to_keep  
     
     total_coins = p1_coins + p2_coins
     
@@ -45,7 +40,6 @@ def calculate_match_statistics(match_uuid, current_round_number):
         return 0, 0, 0, 0
     
     total_rounds = completed_rounds.count()
-    # Count total possible acceptances (2 per round)
     total_possible_accepts = total_rounds * 2
     
     # Count actual acceptances

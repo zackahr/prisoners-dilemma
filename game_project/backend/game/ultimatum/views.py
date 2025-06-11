@@ -7,6 +7,15 @@ import traceback
 
 from .models import UltimatumGameRound
 
+def get_client_ip(request):
+    """Helper function to get the real client IP address"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
 @csrf_exempt
 def create_match(request):
     """Create or join an Ultimatum Game match"""
@@ -24,7 +33,7 @@ def create_match(request):
     if not player_fingerprint:
         return JsonResponse({'status': 'error', 'message': 'Player fingerprint is required'}, status=400)
 
-    ip_address = request.META.get('REMOTE_ADDR', '127.0.0.1')
+    ip_address = get_client_ip(request)
     print(f"[create_match] incoming payload: game_mode={game_mode}, "
           f"player_fingerprint={player_fingerprint}, IP={ip_address}")
 
@@ -48,6 +57,7 @@ def create_match(request):
                 existing_round.player_2_fingerprint = player_fingerprint
                 existing_round.player_2_country = 'Unknown'
                 existing_round.player_2_city = 'Unknown'
+                existing_round.player_2_ip_address = ip_address  # Store IP for player 2
                 existing_round.save()
 
                 match_id = existing_round.game_match_uuid
@@ -69,7 +79,8 @@ def create_match(request):
                     game_mode=game_mode,
                     player_1_fingerprint=player_fingerprint,
                     player_1_country='Unknown',
-                    player_1_city='Unknown'
+                    player_1_city='Unknown',
+                    player_1_ip_address=ip_address  # Store IP for player 1
                 )
                 print(f"[create_match] created new match {match_id}")
                 return JsonResponse({
@@ -89,9 +100,11 @@ def create_match(request):
                 player_1_fingerprint=player_fingerprint,
                 player_1_country='Unknown',
                 player_1_city='Unknown',
+                player_1_ip_address=ip_address,  # Store IP for player 1
                 player_2_fingerprint='bot',
                 player_2_country='Bot',
-                player_2_city='Bot'
+                player_2_city='Bot',
+                player_2_ip_address=None  # Bot doesn't have an IP
             )
             print(f"[create_match] created bot match {match_id}")
             return JsonResponse({
@@ -110,6 +123,7 @@ def create_match(request):
         traceback.print_exc()
         return JsonResponse({'status': 'error', 'message': f'Database error: {str(e)}'}, status=500)
 
+# Rest of your views remain the same...
 def game_page(request, match_id):
     """Render the game page for a specific match"""
     try:
