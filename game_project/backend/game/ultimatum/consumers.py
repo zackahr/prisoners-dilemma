@@ -6,7 +6,7 @@ from .game_logic import update_game_stats
 import random
 import json, asyncio, logging 
 logger = logging.getLogger(__name__)
-PROPOSER_TIMEOUT = 15
+PROPOSER_TIMEOUT = 25
 
 class UltimatumGameConsumer(AsyncWebsocketConsumer):
 
