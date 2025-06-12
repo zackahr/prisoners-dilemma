@@ -17,7 +17,7 @@ import "./GamePage.css"
 
 const MAX_ROUNDS = 25
 const TOTAL_MONEY = 100
-const OFFER_TIME_LIMIT = 15
+const OFFER_TIME_LIMIT = 25
 
 export default function GamePage() {
   const navigate = useNavigate()
