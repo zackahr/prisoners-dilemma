@@ -18,8 +18,6 @@ SELECT
     ugr.player_2_response_to_p1_offer,
     ugr.player_2_coins_made_in_round,
 
-
-
     ugr.players_sum_coins_in_round,
     ugr.players_sum_coins_total,
     ugr.player_1_final_score,

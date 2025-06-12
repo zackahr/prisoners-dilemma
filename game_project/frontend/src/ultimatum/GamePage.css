@@ -1286,3 +1286,144 @@
 }
 
 
+
+
+
+
+
+
+/* Timeout Popup Styles */
+.timeout-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+}
+
+.timeout-popup {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  animation: popup-appear 0.3s ease-out;
+}
+
+@keyframes popup-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.timeout-popup-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.timeout-icon {
+  width: 3rem;
+  height: 3rem;
+  color: #f59e0b;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.timeout-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #dc2626;
+  margin: 0;
+}
+
+.timeout-message {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.timeout-countdown {
+  margin-top: 1rem;
+}
+
+.countdown-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  animation: countdown-pulse 1s infinite;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+@keyframes countdown-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  }
+}
+
+.countdown-number {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+}
+
+/* Responsive styles */
+@media (max-width: 480px) {
+  .timeout-popup {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  
+  .timeout-title {
+    font-size: 1.25rem;
+  }
+  
+  .timeout-message {
+    font-size: 0.9rem;
+  }
+}
+
+
+
+
+
+
+
+

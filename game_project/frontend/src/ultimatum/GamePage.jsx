@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react"
 import {
   Clock,
@@ -7,6 +8,7 @@ import {
   Wifi,
   WifiOff,
   Loader2,
+  AlertTriangle,
 } from "lucide-react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
@@ -17,7 +19,7 @@ import "./GamePage.css"
 
 const MAX_ROUNDS = 25
 const TOTAL_MONEY = 100
-const OFFER_TIME_LIMIT = 15
+const OFFER_TIME_LIMIT = 25
 
 export default function GamePage() {
   const navigate = useNavigate()
@@ -34,6 +36,10 @@ export default function GamePage() {
   const [inputOffer, setInputOffer] = useState("")
   const [timeLeft, setTimeLeft] = useState(OFFER_TIME_LIMIT)
   const [currentPhase, setCurrentPhase] = useState("waiting") // "waiting" | "offering" | "responding" | "result"
+  
+  // Timeout popup state
+  const [showTimeoutPopup, setShowTimeoutPopup] = useState(false)
+  const [timeoutCountdown, setTimeoutCountdown] = useState(5)
 
   const {
     gameState, connectionStatus, error,
@@ -138,13 +144,32 @@ export default function GamePage() {
     setTimeLeft(15)
   }, [gameState, playerFingerprint])
 
-  // Handle timeout navigation
+  // Handle timeout navigation with popup
   useEffect(() => {
     if (timeLeft <= 0 &&
         (currentPhase === "offering" || currentPhase === "responding")) {
-      navigate("/ultimatum");
+      console.log("⏰ Time's up! Showing timeout popup")
+      setShowTimeoutPopup(true)
+      setTimeoutCountdown(5)
     }
-  }, [timeLeft, currentPhase, navigate]);
+  }, [timeLeft, currentPhase]);
+
+  // Handle timeout popup countdown
+  useEffect(() => {
+    if (!showTimeoutPopup) return
+
+    if (timeoutCountdown <= 0) {
+      console.log("⏰ Redirecting to /ultimatum")
+      navigate("/ultimatum")
+      return
+    }
+
+    const timer = setTimeout(() => {
+      setTimeoutCountdown(prev => prev - 1)
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [showTimeoutPopup, timeoutCountdown, navigate])
 
   // Timer countdown
   useEffect(() => {
@@ -197,6 +222,30 @@ export default function GamePage() {
   // Helper to get current player info
   const isPlayer1 = gameState?.player1Fingerprint === playerFingerprint
   const isPlayer2 = gameState?.player2Fingerprint === playerFingerprint
+
+  // Timeout Popup Component
+  const TimeoutPopup = () => {
+    if (!showTimeoutPopup) return null
+
+    return (
+      <div className="timeout-popup-overlay">
+        <div className="timeout-popup">
+          <div className="timeout-popup-content">
+            <AlertTriangle className="timeout-icon" />
+            <h2 className="timeout-title">Time's Up!</h2>
+            <p className="timeout-message">
+              The 25 seconds have passed. You will be redirected to the menu.
+            </p>
+            <div className="timeout-countdown">
+              <div className="countdown-circle">
+                <span className="countdown-number">{timeoutCountdown}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Handle match termination UI
   if (matchTerminated) {
@@ -318,6 +367,7 @@ export default function GamePage() {
   // Main game interface
   return (
     <div className="game-page">
+      <TimeoutPopup />
       <div className="game-container">
         {/* Connection status */}
         <div className="connection-status">
@@ -442,41 +492,6 @@ export default function GamePage() {
                   >
                     SUBMIT OFFER
                   </button>
-                  
-                  {/* Show offer status - UPDATED to show coins breakdown */}
-                  {gameState?.currentRoundState && (
-                    <div className="simultaneous-offers">
-                      <div className={`offer-status-card ${gameState.currentRoundState.player1OfferMade ? 'completed' : 'pending'}`}>
-                        <div className="offer-status-title">Player 1</div>
-                        <div className="offer-status-amount">
-                          {gameState.currentRoundState.player1OfferMade ? (
-                            <>
-                              <div>Offers: ${gameState.currentRoundState.player1CoinsToOffer}</div>
-                              <div>Keeps: ${gameState.currentRoundState.player1CoinsToKeep}</div>
-                            </>
-                          ) : "Pending..."}
-                        </div>
-                        <div className={`offer-status-indicator ${gameState.currentRoundState.player1OfferMade ? 'completed' : 'pending'}`}>
-                          {gameState.currentRoundState.player1OfferMade ? "Complete" : "Waiting"}
-                        </div>
-                      </div>
-                      
-                      <div className={`offer-status-card ${gameState.currentRoundState.player2OfferMade ? 'completed' : 'pending'}`}>
-                        <div className="offer-status-title">Player 2</div>
-                        <div className="offer-status-amount">
-                          {gameState.currentRoundState.player2OfferMade ? (
-                            <>
-                              <div>Offers: ${gameState.currentRoundState.player2CoinsToOffer}</div>
-                              <div>Keeps: ${gameState.currentRoundState.player2CoinsToKeep}</div>
-                            </>
-                          ) : "Pending..."}
-                        </div>
-                        <div className={`offer-status-indicator ${gameState.currentRoundState.player2OfferMade ? 'completed' : 'pending'}`}>
-                          {gameState.currentRoundState.player2OfferMade ? "Complete" : "Waiting"}
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 
