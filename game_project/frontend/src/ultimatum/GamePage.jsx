@@ -444,7 +444,7 @@ export default function GamePage() {
                   </button>
                   
                   {/* Show offer status - UPDATED to show coins breakdown */}
-                  {gameState?.currentRoundState && (
+                  {/* {gameState?.currentRoundState && (
                     <div className="simultaneous-offers">
                       <div className={`offer-status-card ${gameState.currentRoundState.player1OfferMade ? 'completed' : 'pending'}`}>
                         <div className="offer-status-title">Player 1</div>
@@ -476,7 +476,7 @@ export default function GamePage() {
                         </div>
                       </div>
                     </div>
-                  )}
+                  )} */}
                 </div>
               )}
 
