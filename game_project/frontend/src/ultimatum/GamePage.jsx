@@ -9,7 +9,6 @@ import {
   Loader2,
 } from "lucide-react"
 import { useNavigate, useSearchParams } from "react-router-dom"
-
 import PayoffsTable from "./PayoffsTable"
 import { useWebSocket } from "../hooks/useWebSocket"
 import { gameApi, getPlayerFingerprint } from "../services/gameApi"
@@ -443,7 +442,7 @@ export default function GamePage() {
                     SUBMIT OFFER
                   </button>
                   
-                  {/* Show offer status - UPDATED to show coins breakdown */}
+                  {/* 
                   {gameState?.currentRoundState && (
                     <div className="simultaneous-offers">
                       <div className={`offer-status-card ${gameState.currentRoundState.player1OfferMade ? 'completed' : 'pending'}`}>
@@ -476,7 +475,7 @@ export default function GamePage() {
                         </div>
                       </div>
                     </div>
-                  )}
+                  )}Show offer status - UPDATED to show coins breakdown */}
                 </div>
               )}
 
