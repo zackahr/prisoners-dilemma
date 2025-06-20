@@ -178,8 +178,10 @@ export const useWebSocket = (matchId, playerFingerprint) => {
         }
 
         if (event.code === 4001) {
-          setError("Match terminated by server")
+          // setError("Match terminated by server")
+          setError("Match terminated")  
           setMatchTerminated(true)
+          // setTerminationReason(event.reason || "timeout");
           setTerminationReason(event.reason || "timeout");
           console.log("🚫 Match terminated by server - not attempting to reconnect")
           return
@@ -227,7 +229,11 @@ export const useWebSocket = (matchId, playerFingerprint) => {
   }, [matchId, playerFingerprint, matchTerminated])
 
   const disconnect = useCallback(() => {
-    console.log("🔌 Disconnecting WebSocket")
+    // console.log("🔌 Disconnecting WebSocket")
+    console.log("🔌 Manual disconnect requested")
+
+    // From now on never attempt to reconnect
+    setMatchTerminated(true);        // <- blocks reconnect logic
     
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current)
@@ -238,7 +244,9 @@ export const useWebSocket = (matchId, playerFingerprint) => {
     reconnectAttemptsRef.current = maxReconnectAttempts
     
     if (socket && socket.readyState !== WebSocket.CLOSED) {
-      socket.close(1000, "Manual disconnect")
+      // socket.close(1000, "Manual disconnect")
+      socket.send(JSON.stringify({action:"leave", player_fingerprint:playerFingerprint}));
+      socket.close(4001, "Client left match");
     }
     
     setSocket(null)

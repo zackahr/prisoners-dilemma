@@ -44,7 +44,7 @@ export default function GamePage() {
   const {
     gameState, connectionStatus, error,
     matchTerminated, terminationReason,
-    sendMessage
+    sendMessage, disconnect
   } = useWebSocket(matchId, playerFingerprint);
 
   // Initialize match
@@ -153,13 +153,27 @@ export default function GamePage() {
       setTimeoutCountdown(5)
     }
   }, [timeLeft, currentPhase]);
-
+  useEffect(() => {
+    // const handlePop = () => disconnect();     // browser back-button
+      const handlePop = () => {                 // browser back-button
+        disconnect();                           // close WS  notify server
+        navigate("/ultimatum", { replace: true });
+      };
+    const handleUnload = () => disconnect();  // tab closing / reload
+    window.addEventListener("popstate", handlePop);
+    window.addEventListener("beforeunload", handleUnload);
+    return () => {
+      window.removeEventListener("popstate", handlePop);
+      window.removeEventListener("beforeunload", handleUnload);
+    };
+  }, [disconnect]);
   // Handle timeout popup countdown
   useEffect(() => {
     if (!showTimeoutPopup) return
 
     if (timeoutCountdown <= 0) {
       console.log("⏰ Redirecting to /ultimatum")
+      disconnect();
       navigate("/ultimatum")
       return
     }
@@ -309,7 +323,10 @@ export default function GamePage() {
                 </>
               )}
             </div>
-            <button onClick={() => navigate("/ultimatum")} className="menu-button">
+            <button onClick={() => {
+                disconnect();
+                navigate("/ultimatum");
+              }} className="menu-button">
               Back to Menu
             </button>
           </div>
@@ -353,7 +370,7 @@ export default function GamePage() {
           </div>
 
           <div className="action-buttons">
-            <button onClick={() => navigate("/ultimatum")} className="menu-button">
+            <button onClick={() => { disconnect(); navigate("/ultimatum"); }} className="menu-button">
               Back to Menu
             </button>
           </div>

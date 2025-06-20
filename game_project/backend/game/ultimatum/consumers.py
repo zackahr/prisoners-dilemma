@@ -84,11 +84,11 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             )()
 
             needs_offer = (
-                (self.player_fingerprint == first.player_1_fingerprint and
-                 current_round.player_1_offer is None)
+                (self.player_fingerprint == first.player_1_fingerprint and 
+                current_round.player_1_coins_to_offer is None)
                 or
-                (self.player_fingerprint == first.player_2_fingerprint and
-                 current_round.player_2_offer is None)
+                (self.player_fingerprint == first.player_2_fingerprint and 
+                 current_round.player_2_coins_to_offer is None)
             )
             if needs_offer:
                 await self.handle_player_timeout()
@@ -133,6 +133,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                     
                     await self.channel_layer.group_send(self.room_group_name, {
                         "type": "force_disconnect",
+                        "reason": "player_disconnected",
                     })
                 else:
                     logger.info(f"Match {self.match_id} is complete - keeping match data")
@@ -149,7 +150,9 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             
         action = data.get("action")
         fp = data.get("player_fingerprint")
-        
+        if action == "leave":
+            await self.close(code=4001)
+            return
         if not action or not fp:
             await self.send(text_data=json.dumps({"error": "Missing action or player_fingerprint"}))
             return
@@ -309,7 +312,8 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
     async def force_disconnect(self, event):
         try:
             logger.info(f"Force disconnecting player from match {self.match_id}")
-            await self.close(code=4001)
+            # await self.close(code=4001)
+            await self.close(code=4001, reason=event.get("reason", "player_disconnected"))
         except Exception as e:
             logger.error(f"Error during force disconnect: {e}")
 
