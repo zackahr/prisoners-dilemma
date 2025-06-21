@@ -1,5 +1,7 @@
-const API_BASE_URL = "http://localhost:8001/api/ultimatum"
-
+// const API_BASE_URL = "http://localhost:8001/api/ultimatum"
+// const API_BASE_URL = `${window.location.protocol}//${window.location.host}/api/ultimatum`;
+const PORT          = 8001;                             // <-- change if you run Django on another port
+const API_BASE_URL  = `http://localhost:${PORT}/api/ultimatum`;
 export const gameApi = {
   async createMatch(gameMode, playerFingerprint) {
     console.log("🎮 Creating match:", { gameMode, playerFingerprint })

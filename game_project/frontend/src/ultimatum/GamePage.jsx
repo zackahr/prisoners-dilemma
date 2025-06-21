@@ -48,6 +48,32 @@ export default function GamePage() {
   } = useWebSocket(matchId, playerFingerprint);
 
   // Initialize match
+  // useEffect(() => {
+  //   const initializeMatch = async () => {
+  //     if (urlMatchId) {
+  //       console.log("🔗 Using existing match from URL:", urlMatchId)
+  //       console.log("👤 Using fingerprint:", playerFingerprint)
+  //       setMatchId(urlMatchId)
+  //       setIsInitializing(false)
+  //       return
+  //     }
+
+  //     try {
+  //       console.log("🚀 Initializing new match with mode:", gameMode)
+  //       console.log("👤 Using fingerprint:", playerFingerprint)
+  //       const matchData = await gameApi.createMatch(gameMode, playerFingerprint)
+  //       console.log("✅ Match initialized:", matchData.match_id)
+  //       setMatchId(matchData.match_id)
+  //     } catch (err) {
+  //       console.error("❌ Failed to initialize match:", err)
+  //     } finally {
+  //       setIsInitializing(false)
+  //     }
+  //   }
+
+  //   initializeMatch()
+  // }, [gameMode, playerFingerprint, urlMatchId])
+// Initialize match
   useEffect(() => {
     const initializeMatch = async () => {
       if (urlMatchId) {
@@ -58,6 +84,14 @@ export default function GamePage() {
         return
       }
 
+      // QUICK FIX: Bypass API for bot mode
+      if (gameMode === "bot") {
+        const { match_id } = await gameApi.createMatch("bot", playerFingerprint);
+        setMatchId(match_id);
+        setIsInitializing(false);
+        return;
+      }
+
       try {
         console.log("🚀 Initializing new match with mode:", gameMode)
         console.log("👤 Using fingerprint:", playerFingerprint)
@@ -66,6 +100,11 @@ export default function GamePage() {
         setMatchId(matchData.match_id)
       } catch (err) {
         console.error("❌ Failed to initialize match:", err)
+        
+        // FALLBACK: Create a temporary match ID
+        const fallbackMatchId = `fallback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        console.log("🔄 Using fallback match ID:", fallbackMatchId)
+        setMatchId(fallbackMatchId)
       } finally {
         setIsInitializing(false)
       }
@@ -73,7 +112,6 @@ export default function GamePage() {
 
     initializeMatch()
   }, [gameMode, playerFingerprint, urlMatchId])
-
   // Handle match termination
   useEffect(() => {
     if (matchTerminated) {

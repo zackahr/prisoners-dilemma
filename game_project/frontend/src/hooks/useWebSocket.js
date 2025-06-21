@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react"
-
+const PORT        = 8001;                                // same number as above
+const WS_BASE_URL = `ws://localhost:${PORT}`;
 export const useWebSocket = (matchId, playerFingerprint) => {
   const [socket, setSocket] = useState(null)
   const [gameState, setGameState] = useState(null)
@@ -35,7 +36,8 @@ export const useWebSocket = (matchId, playerFingerprint) => {
     }
 
     try {
-      const wsUrl = `ws://localhost:8001/ws/ultimatum-game/${matchId}/`
+      // const wsUrl = `ws://localhost:8001/ws/ultimatum-game/${matchId}/`
+      const wsUrl = `${WS_BASE_URL}/ws/ultimatum-game/${matchId}/`;
       console.log("🔌 Connecting to WebSocket:", wsUrl)
       console.log("👤 Player fingerprint:", playerFingerprint)
 
@@ -279,7 +281,9 @@ export const useWebSocket = (matchId, playerFingerprint) => {
     }
     
     return () => {
-      disconnect()
+        if (connectionRef.current === "connected") {
+    disconnect();
+  }
     }
   }, [matchId, playerFingerprint, matchTerminated])
 

@@ -24,7 +24,20 @@ def calculate_simultaneous_payoff(p1_coins_to_keep, p1_coins_to_offer, p2_coins_
     total_coins = p1_coins + p2_coins
     
     return p1_coins, p2_coins, total_coins
+# def calculate_simultaneous_payoff(p1_keep, p1_offer,
+#                                   p2_keep, p2_offer,
+#                                   p1_response, p2_response):
+#     """
+#     Each player always receives the amount they decided to keep.
+#     If they *accepted* the opponent's offer they also receive that offer.
+#     """
+#     p1_extra = p2_offer if p1_response == "accept" else 0
+#     p2_extra = p1_offer if p2_response == "accept" else 0
 
+#     p1_total = p1_keep + p1_extra
+#     p2_total = p2_keep + p2_extra
+
+    return p1_total, p2_total, p1_total + p2_total
 def calculate_match_statistics(match_uuid, current_round_number):
     """Calculate acceptance rates and average offers for the match"""
     completed_rounds = UltimatumGameRound.objects.filter(
