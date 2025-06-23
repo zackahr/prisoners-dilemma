@@ -1,8 +1,32 @@
 import "./PayoffMatrix.css"
+import { useRef, useEffect } from "react"
 
-function PayoffMatrix() {
+function PayoffMatrix({ highlightedCell }) {
+  const matrixRef = useRef(null)
+
+  useEffect(() => {
+    if (!matrixRef.current) return
+
+    // Find and remove existing highlight
+    const previouslyHighlighted = matrixRef.current.querySelector(".payoff-cell.highlighted")
+    if (previouslyHighlighted) {
+      previouslyHighlighted.classList.remove("highlighted")
+    }
+
+    // Add new highlight if data is available
+    if (highlightedCell && highlightedCell.player1Action && highlightedCell.player2Action) {
+      const p1Action = highlightedCell.player1Action.toLowerCase()
+      const p2Action = highlightedCell.player2Action.toLowerCase()
+      const cellSelector = `.${p1Action}-${p2Action}`
+      const cellToHighlight = matrixRef.current.querySelector(cellSelector)
+      if (cellToHighlight) {
+        cellToHighlight.classList.add("highlighted")
+      }
+    }
+  }, [highlightedCell])
+
   return (
-    <div className="payoff-matrix-container">
+    <div className="payoff-matrix-container" ref={matrixRef}>
       <div className="payoff-matrix">
         <div className="matrix-header">
           <div className="matrix-corner"></div>
