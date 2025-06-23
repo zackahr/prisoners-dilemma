@@ -133,15 +133,36 @@ export default function MatchmakingPage() {
       }, delay)
     }
   }
+const API_BASE = process.env.REACT_APP_API_BASE;   // "http://localhost:8001/api/ultimatum"
 
-  const handleCancel = () => {
-    console.log("❌ User cancelled matchmaking")
-    mountedRef.current = false
-    if (pollTimeoutRef.current) {
-      clearTimeout(pollTimeoutRef.current)
-    }
-    navigate("/ultimatum")
+const handleCancel = () => {
+  console.log("❌ User cancelled matchmaking");
+
+  if (matchId) {
+    fetch(`${API_BASE}/cancel-match/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      keepalive: true,          // still fires while we navigate away
+      body: JSON.stringify({
+        match_id: matchId,
+        player_fingerprint: playerFingerprint,
+      }),
+    }).catch(() => {});
   }
+
+  if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+  mountedRef.current = false;
+  navigate("/ultimatum");
+};
+
+  // const handleCancel = () => {
+  //   console.log("❌ User cancelled matchmaking")
+  //   mountedRef.current = false
+  //   if (pollTimeoutRef.current) {
+  //     clearTimeout(pollTimeoutRef.current)
+  //   }
+  //   navigate("/ultimatum")
+  // }
 
   const handleRetry = () => {
     console.log("🔄 Retrying matchmaking")

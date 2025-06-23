@@ -46,12 +46,17 @@ def create_match(request):
                 round_number=1
             ).first()
 
+            # if existing_round and existing_round.player_1_fingerprint == player_fingerprint:
+            #     return JsonResponse({
+            #         "status": "error",
+            #         "message": "You are already registered in this match."
+            #     }, status=400)
             if existing_round and existing_round.player_1_fingerprint == player_fingerprint:
-                return JsonResponse({
-                    "status": "error",
-                    "message": "You are already registered in this match."
-                }, status=400)
-
+                # old abandoned search – wipe and start a new one
+                UltimatumGameRound.objects.filter(
+                    game_match_uuid = existing_round.game_match_uuid
+                ).delete()
+                existing_round = None
             if existing_round:
                 # Join the existing match
                 existing_round.player_2_fingerprint = player_fingerprint
@@ -405,3 +410,35 @@ def cleanup_matches(request):
         'status': 'error',
         'message': 'Invalid request method'
     }, status=405)
+
+
+@csrf_exempt
+def cancel_match(request):
+    """
+    Client hit “Cancel Search”.
+    If the match is still waiting for player 2, wipe it.
+    """
+    if request.method != "POST":
+        return JsonResponse({"detail": "method not allowed"}, status=405)
+
+    data = json.loads(request.body or "{}")
+    match_id  = data.get("match_id")
+    fp        = data.get("player_fingerprint")
+    if not match_id or not fp:
+        return JsonResponse({"detail": "missing fields"}, status=400)
+
+    first = UltimatumGameRound.objects.filter(
+        game_match_uuid        = match_id,
+        round_number           = 1,
+        match_complete         = False,
+        player_2_fingerprint__isnull = True,
+    ).first()
+
+    if first and first.player_1_fingerprint == fp:
+        deleted, _ = UltimatumGameRound.objects.filter(
+            game_match_uuid = match_id
+        ).delete()
+        return JsonResponse({"status": "cancelled", "deleted_rows": deleted})
+
+    # someone already joined (or wrong fingerprint) → ignore
+    return JsonResponse({"status": "ignored"})

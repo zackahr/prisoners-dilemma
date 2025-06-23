@@ -120,7 +120,7 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
         </div>
 
         {/* Strategy Tips */}
-        <div className="strategy-tips-card">
+        {/* <div className="strategy-tips-card">
           <div className="strategy-header">
             <Trophy className="strategy-icon" />
             <h3 className="strategy-title">Strategy Tips</h3>
@@ -155,7 +155,7 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Game Mode Selection */}
         <div className="game-modes">

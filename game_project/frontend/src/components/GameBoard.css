@@ -2,37 +2,12 @@
 
 .game-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 25%, #10b981 50%, #3b82f6 75%, #6366f1 100%);
-  background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
+  background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%), #1a202c;
   padding: 1rem;
   font-family: "Inter", sans-serif;
   position: relative;
   overflow: hidden;
-}
-
-.game-page::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-@keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
 }
 
 /* Connecting Screen */
@@ -173,6 +148,8 @@
 
 /* Game Screen */
 .game-screen {
+  background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%);
   max-width: 1200px;
   margin: 0 auto;
   position: relative;

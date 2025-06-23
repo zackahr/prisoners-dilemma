@@ -65,24 +65,14 @@ function PayoffMatrix() {
           </div>
         </div>
       </div>
-
-      <div className="payoff-legend">
-        <div className="legend-item">
-          <div className="legend-color best"></div>
-          <span>Best outcome (30 points)</span>
-        </div>
-        <div className="legend-item">
-          <div className="legend-color good"></div>
-          <span>Good outcome (20 points)</span>
-        </div>
-        <div className="legend-item">
-          <div className="legend-color poor"></div>
-          <span>Poor outcome (10 points)</span>
-        </div>
-        <div className="legend-item">
-          <div className="legend-color worst"></div>
-          <span>Worst outcome (0 points)</span>
-        </div>
+      <div className="payoff-explanation">
+        <h3>How points are awarded:</h3>
+        <ul>
+          <li>IF you cooperate and the other player cooperates: 20 points each</li>
+          <li>IF you cooperate and the other player defects: 0 points to you / 30 to them</li>
+          <li>IF you defect and the other player cooperates: 30 points to you / 0 to them</li>
+          <li>IF you defect and the other player defects: 10 points each</li>
+        </ul>
       </div>
     </div>
   )

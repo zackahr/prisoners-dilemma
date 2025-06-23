@@ -14,4 +14,7 @@ urlpatterns = [
     
     # Admin endpoints
     path('cleanup-matches/', views.cleanup_matches, name='cleanup_matches'),
+
+
+    path("cancel-match/", views.cancel_match, name="cancel_match"),
 ]
