@@ -6,7 +6,7 @@ import RoundHistory from "./RoundHistory"
 import GameTimer from "./GameTimer"
 import "./GameBoard.css"
 import Modal from "./Modal"
-import PayoffsTable from "./PayoffsTable";
+import PayoffsTable from "./PayoffsTable"
 
 function GameBoard({ playerFingerprint }) {
   const { matchId } = useParams()
@@ -33,6 +33,8 @@ function GameBoard({ playerFingerprint }) {
   const [myFingerprint, setMyFingerprint] = useState("")
   const socketRef = useRef(null)
   const [modal, setModal] = useState({ open: false, title: "", msg: "" })
+  const [roundPhase, setRoundPhase] = useState("choosing") // 'choosing' or 'results'
+  const [lastRoundResult, setLastRoundResult] = useState(null)
 
   // Connect to WebSocket
   useEffect(() => {
@@ -121,27 +123,51 @@ function GameBoard({ playerFingerprint }) {
     }
   }, [matchId, navigate, playerFingerprint])
 
+  // Effect to manage the results display duration
+  useEffect(() => {
+    if (roundPhase === "results") {
+      const timer = setTimeout(() => {
+        setRoundPhase("choosing")
+        setLastRoundResult(null)
+        setTimeLeft(10) // Reset timer for the new round
+        setCanMakeChoice(true)
+      }, 4000) // Show results for 4 seconds
+
+      return () => clearTimeout(timer)
+    }
+  }, [roundPhase])
+
   const updateGameState = (newState, fingerprint) => {
     console.log("Updating game state with fingerprint:", fingerprint)
     console.log("New state:", newState)
 
     setGameState((prev) => {
+      // Check if a round has just ended
+      if (newState.currentRound > prev.currentRound && !newState.gameOver) {
+        const lastRoundData = newState.roundHistory.find((r) => r.roundNumber === prev.currentRound)
+        if (lastRoundData) {
+          setLastRoundResult({
+            player1Action: lastRoundData.player1Action,
+            player2Action: lastRoundData.player2Action,
+            player1Payoff: lastRoundData.player1Payoff,
+            player2Payoff: lastRoundData.player2Payoff,
+          })
+          setRoundPhase("results")
+          setCanMakeChoice(false) // Disable choices during results phase
+        }
+      }
+
       const merged = { ...prev, ...newState }
       const iAmP1 = merged.player1Fingerprint === fingerprint
 
       setIsPlayer1(iAmP1)
-      checkIfWaitingForMyAction(merged, iAmP1)
-      if (merged.currentRound !== prev.currentRound && !merged.waitingForOpponent && !merged.gameOver) {
-        setTimeLeft(10)
-        setCanMakeChoice(true)
+      if (roundPhase === "choosing") {
+        checkIfWaitingForMyAction(merged, iAmP1)
+      } else {
+        setWaitingForMyAction(false)
       }
       return merged
     })
-
-    if (!newState.waitingForOpponent && !newState.gameOver) {
-      setTimeLeft(10)
-      setCanMakeChoice(true)
-    }
   }
 
   const checkIfWaitingForMyAction = (state, iAmP1) => {
@@ -370,14 +396,21 @@ function GameBoard({ playerFingerprint }) {
 
         <div className="game-content">
           <div className="game-main">
-            <div className="timer-section">
-              <GameTimer
-                timeLeft={timeLeft}
-                setTimeLeft={setTimeLeft}
-                canMakeChoice={canMakeChoice && waitingForMyAction}
-                onTimeUp={() => waitingForMyAction && makeChoice("Defect")}
-              />
-            </div>
+            {roundPhase === "choosing" ? (
+              <div className="timer-section">
+                <GameTimer
+                  timeLeft={timeLeft}
+                  setTimeLeft={setTimeLeft}
+                  canMakeChoice={canMakeChoice && waitingForMyAction}
+                  onTimeUp={() => waitingForMyAction && makeChoice("Defect")}
+                />
+              </div>
+            ) : (
+              <div className="timer-section results-display">
+                <Trophy className="results-icon" />
+                <h4>Round {gameState.currentRound > 1 ? gameState.currentRound - 1 : 1} Results</h4>
+              </div>
+            )}
 
             <div className="scores-section">
               <div className="score-card player1">
@@ -385,7 +418,14 @@ function GameBoard({ playerFingerprint }) {
                   <Target className="score-icon" />
                   <h3>Player 1</h3>
                 </div>
-                <div className="score-value">{gameState.player1Score}</div>
+                <div className="score-value">
+                  {roundPhase === "results" && lastRoundResult ? (
+                    <span className="round-gain">+{lastRoundResult.player1Payoff}</span>
+                  ) : (
+                    gameState.player1Score
+                  )}
+                </div>
+                <div className="score-label">{roundPhase === "results" ? "Round Gain" : "Total Score"}</div>
               </div>
 
               <div className="score-card player2">
@@ -393,25 +433,36 @@ function GameBoard({ playerFingerprint }) {
                   {gameState.gameMode === "online" ? <Users className="score-icon" /> : <Bot className="score-icon" />}
                   <h3>Player 2</h3>
                 </div>
-                <div className="score-value">{gameState.player2Score}</div>
+                <div className="score-value">
+                  {roundPhase === "results" && lastRoundResult ? (
+                    <span className="round-gain">+{lastRoundResult.player2Payoff}</span>
+                  ) : (
+                    gameState.player2Score
+                  )}
+                </div>
+                <div className="score-label">{roundPhase === "results" ? "Round Gain" : "Total Score"}</div>
               </div>
             </div>
 
             <div className="action-section">
-              <h3 className="action-title">Make Your Choice</h3>
+              <h3 className="action-title">{roundPhase === "choosing" ? "Make Your Choice" : "Round Over"}</h3>
               <div className="action-buttons">
                 <button
-                  className={`action-button cooperate-button ${!canMakeChoice || !waitingForMyAction ? "disabled" : ""}`}
+                  className={`action-button cooperate-button ${
+                    !canMakeChoice || !waitingForMyAction || roundPhase !== "choosing" ? "disabled" : ""
+                  }`}
                   onClick={() => makeChoice("Cooperate")}
-                  disabled={!canMakeChoice || !waitingForMyAction}
+                  disabled={!canMakeChoice || !waitingForMyAction || roundPhase !== "choosing"}
                 >
                   <Shield className="button-icon" />
                   Cooperate
                 </button>
                 <button
-                  className={`action-button defect-button ${!canMakeChoice || !waitingForMyAction ? "disabled" : ""}`}
+                  className={`action-button defect-button ${
+                    !canMakeChoice || !waitingForMyAction || roundPhase !== "choosing" ? "disabled" : ""
+                  }`}
                   onClick={() => makeChoice("Defect")}
-                  disabled={!canMakeChoice || !waitingForMyAction}
+                  disabled={!canMakeChoice || !waitingForMyAction || roundPhase !== "choosing"}
                 >
                   <Zap className="button-icon" />
                   Defect
@@ -421,7 +472,7 @@ function GameBoard({ playerFingerprint }) {
           </div>
 
           <div className="game-sidebar">
-            <PayoffMatrix />
+            <PayoffMatrix highlightedCell={lastRoundResult} />
 
             <div className="round-progress">
               <h3 className="progress-title">Round Progress</h3>
