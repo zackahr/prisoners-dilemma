@@ -90,6 +90,7 @@ function GameBoard({ playerFingerprint }) {
 
       if (data.game_over) {
         console.log("Game over received:", data)
+        console.log("data", data);
         setGameState((prevState) => ({
           ...prevState,
           gameOver: true,
@@ -420,12 +421,17 @@ function GameBoard({ playerFingerprint }) {
                 </div>
                 <div className="score-value">
                   {roundPhase === "results" && lastRoundResult ? (
-                    <span className="round-gain">+{lastRoundResult.player1Payoff}</span>
+                    <span className="round-gain">+{gameState.roundHistory[gameState.roundHistory.length - 1].player1Points}</span>
+                  ) : gameState.roundHistory.length > 0 ? (
+                    gameState.roundHistory[gameState.roundHistory.length - 1].player1Points || 
+                    gameState.roundHistory[gameState.roundHistory.length - 1].player1Payoff || 0
                   ) : (
                     gameState.player1Score
                   )}
                 </div>
-                <div className="score-label">{roundPhase === "results" ? "Round Gain" : "Total Score"}</div>
+                <div className="score-label">
+                  {roundPhase === "results" ? "Round Gain" : gameState.roundHistory.length > 0 ? "Current Round" : "Total Score"}
+                </div>
               </div>
 
               <div className="score-card player2">
@@ -435,12 +441,17 @@ function GameBoard({ playerFingerprint }) {
                 </div>
                 <div className="score-value">
                   {roundPhase === "results" && lastRoundResult ? (
-                    <span className="round-gain">+{lastRoundResult.player2Payoff}</span>
+                    <span className="round-gain">+{gameState.roundHistory[gameState.roundHistory.length - 1].player2Points}</span>
+                  ) : gameState.roundHistory.length > 0 ? (
+                    gameState.roundHistory[gameState.roundHistory.length - 1].player2Points || 
+                    gameState.roundHistory[gameState.roundHistory.length - 1].player2Payoff || 0
                   ) : (
                     gameState.player2Score
                   )}
                 </div>
-                <div className="score-label">{roundPhase === "results" ? "Round Gain" : "Total Score"}</div>
+                <div className="score-label">
+                  {roundPhase === "results" ? "Round Gain" : gameState.roundHistory.length > 0 ? "Current Round" : "Total Score"}
+                </div>
               </div>
             </div>
 
