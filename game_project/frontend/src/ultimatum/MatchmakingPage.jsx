@@ -7,7 +7,6 @@ import "./MatchmakingPage.css"
 export default function MatchmakingPage() {
   const navigate = useNavigate()
   
-  // FIXED: Use the new consistent fingerprint function
   const [playerFingerprint] = useState(() => getPlayerFingerprint())
   
   const [matchId, setMatchId] = useState(null)
@@ -16,7 +15,7 @@ export default function MatchmakingPage() {
   const pollTimeoutRef = useRef(null)
   const mountedRef = useRef(true)
   const pollAttempts = useRef(0)
-  const maxPollAttempts = 15 // 30 seconds max
+  
 
   useEffect(() => {
     return () => {
@@ -73,7 +72,7 @@ export default function MatchmakingPage() {
     
     try {
       pollAttempts.current++
-      console.log(`🔄 Checking match status (attempt ${pollAttempts.current}/${maxPollAttempts})`)
+      console.log(`🔄 Checking match status (attempt ${pollAttempts.current})`)
       
       const stats = await gameApi.getMatchStats(matchId)
       
@@ -93,20 +92,18 @@ export default function MatchmakingPage() {
         return
       }
       
-      // Check if we've exceeded max attempts
-      if (pollAttempts.current >= maxPollAttempts) {
-        console.log("⏰ Timeout reached, proceeding to game anyway...")
-        setStatus("found")
-        setTimeout(() => {
-          if (mountedRef.current) {
-            navigate(`/ultimatum/game?mode=online&match=${matchId}`)
-          }
-        }, 1000)
-        return
-      }
+      // if (pollAttempts.current >= maxPollAttempts) {
+      //   console.log("⏰ Timeout reached, proceeding to game anyway...")
+      //   setStatus("found")
+      //   setTimeout(() => {
+      //     if (mountedRef.current) {
+      //       navigate(`/ultimatum/game?mode=online&match=${matchId}`)
+      //     }
+      //   }, 1000)
+      //   return
+      // }
       
-      // Continue polling with exponential backoff
-      const delay = Math.min(1000 + (pollAttempts.current * 200), 3000)
+      const delay = Math.min(1000 + (Math.min(pollAttempts.current, 10) * 200), 5000)
       pollTimeoutRef.current = setTimeout(() => {
         checkMatchStatus(matchId)
       }, delay)
@@ -114,20 +111,8 @@ export default function MatchmakingPage() {
     } catch (error) {
       console.error("❌ Error checking match status:", error)
       
-      // If we get an error, try a few more times then proceed
-      if (pollAttempts.current >= 3) {
-        console.log("⚠️ Multiple errors, proceeding to game...")
-        setStatus("found")
-        setTimeout(() => {
-          if (mountedRef.current) {
-            navigate(`/ultimatum/game?mode=online&match=${matchId}`)
-          }
-        }, 1000)
-        return
-      }
-      
-      // Retry with backoff
-      const delay = Math.min(1000 + (pollAttempts.current * 500), 3000)
+      // If we get repeated errors, still don't give up - but increase delay
+      const delay = Math.min(2000 + (pollAttempts.current * 500), 10000) // Max 10 second delay on errors
       pollTimeoutRef.current = setTimeout(() => {
         checkMatchStatus(matchId)
       }, delay)
@@ -188,7 +173,7 @@ export default function MatchmakingPage() {
 
           <p className="matchmaking-status-text">
             {status === "searching" && "Looking for available matches or creating a new one..."}
-            {status === "waiting" && `Match created! Waiting for another player to join... (${pollAttempts.current}/${maxPollAttempts})`}
+            {status === "waiting" && `Match created! Waiting for another player to join... (${pollAttempts.current} checks)`}
             {status === "found" && "Match found! Starting game..."}
             {status === "error" && (error || "Something went wrong. Please try again.")}
           </p>
