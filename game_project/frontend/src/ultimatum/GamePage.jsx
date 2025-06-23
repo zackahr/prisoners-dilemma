@@ -47,33 +47,6 @@ export default function GamePage() {
     sendMessage, disconnect
   } = useWebSocket(matchId, playerFingerprint);
 
-  // Initialize match
-  // useEffect(() => {
-  //   const initializeMatch = async () => {
-  //     if (urlMatchId) {
-  //       console.log("🔗 Using existing match from URL:", urlMatchId)
-  //       console.log("👤 Using fingerprint:", playerFingerprint)
-  //       setMatchId(urlMatchId)
-  //       setIsInitializing(false)
-  //       return
-  //     }
-
-  //     try {
-  //       console.log("🚀 Initializing new match with mode:", gameMode)
-  //       console.log("👤 Using fingerprint:", playerFingerprint)
-  //       const matchData = await gameApi.createMatch(gameMode, playerFingerprint)
-  //       console.log("✅ Match initialized:", matchData.match_id)
-  //       setMatchId(matchData.match_id)
-  //     } catch (err) {
-  //       console.error("❌ Failed to initialize match:", err)
-  //     } finally {
-  //       setIsInitializing(false)
-  //     }
-  //   }
-
-  //   initializeMatch()
-  // }, [gameMode, playerFingerprint, urlMatchId])
-// Initialize match
   useEffect(() => {
     const initializeMatch = async () => {
       if (urlMatchId) {
