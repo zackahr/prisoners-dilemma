@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react"
 import {
   Clock,
@@ -36,6 +35,10 @@ export default function GamePage() {
   const [inputOffer, setInputOffer] = useState("")
   const [timeLeft, setTimeLeft] = useState(OFFER_TIME_LIMIT)
   const [currentPhase, setCurrentPhase] = useState("waiting") // "waiting" | "offering" | "responding" | "result"
+  
+  // NEW: Track when the round actually started to maintain consistent timer
+  const [roundStartTime, setRoundStartTime] = useState(null)
+  const [timerInitialized, setTimerInitialized] = useState(false)
   
   // Timeout popup state
   const [showTimeoutPopup, setShowTimeoutPopup] = useState(false)
@@ -93,7 +96,35 @@ export default function GamePage() {
     }
   }, [matchTerminated, navigate]);
 
-  // Determine current phase based on game state
+  // NEW: Initialize timer when a new round starts
+  useEffect(() => {
+    if (!gameState) return
+
+    const currentRoundNumber = gameState.currentRound
+    const currentRoundState = gameState.currentRoundState
+
+    // Check if this is a new round that needs timer initialization
+    const isNewRound = currentRoundState && (
+      !currentRoundState.player1OfferMade && 
+      !currentRoundState.player2OfferMade &&
+      !currentRoundState.player1ResponseMade && 
+      !currentRoundState.player2ResponseMade
+    )
+
+    if (isNewRound && (!roundStartTime || !timerInitialized)) {
+      console.log("🕐 Initializing timer for new round:", currentRoundNumber)
+      setRoundStartTime(Date.now())
+      setTimeLeft(OFFER_TIME_LIMIT)
+      setTimerInitialized(true)
+    }
+
+    // Reset timer initialization flag when round is complete
+    if (gameState.gameOver || (currentRoundState && currentRoundState.player1ResponseMade && currentRoundState.player2ResponseMade)) {
+      setTimerInitialized(false)
+    }
+  }, [gameState, roundStartTime, timerInitialized])
+
+  // UPDATED: Determine current phase based on game state (without resetting timer)
   useEffect(() => {
     if (!gameState) return
 
@@ -111,48 +142,31 @@ export default function GamePage() {
 
     const currentRound = gameState.currentRoundState
     if (!currentRound) {
-      // First frame of a fresh round → make my offer
       setCurrentPhase("offering")
-      setTimeLeft(OFFER_TIME_LIMIT)
       return
     }
 
     const isPlayer1 = gameState.player1Fingerprint === playerFingerprint
-    const isPlayer2 = gameState.player2Fingerprint === playerFingerprint
-
-    // Determine what the current player needs to do
     const myOfferMade = isPlayer1 ? currentRound.player1OfferMade : currentRound.player2OfferMade
     const myResponseMade = isPlayer1 ? currentRound.player1ResponseMade : currentRound.player2ResponseMade
-    const opponentOfferMade = isPlayer1 ? currentRound.player2OfferMade : currentRound.player1OfferMade
     const bothOffersMade = currentRound.player1OfferMade && currentRound.player2OfferMade
 
     console.log("🎯 Phase analysis:", {
       isPlayer1,
-      isPlayer2,
       myOfferMade,
       myResponseMade,
-      opponentOfferMade,
       bothOffersMade,
       currentRound
     })
 
-    // Priority 1 – make my offer
+    // Determine phase WITHOUT resetting timer
     if (!myOfferMade) {
       setCurrentPhase("offering")
-      setTimeLeft(OFFER_TIME_LIMIT)
-      return
-    }
-
-    // Priority 2 – respond to opponent
-    if (bothOffersMade && !myResponseMade) {
+    } else if (bothOffersMade && !myResponseMade) {
       setCurrentPhase("responding")
-      setTimeLeft(OFFER_TIME_LIMIT)
-      return
+    } else {
+      setCurrentPhase("waiting")
     }
-    // Priority 3: Otherwise, I'm waiting
-    console.log("🎯 Setting phase to waiting - all my actions complete")
-    setCurrentPhase("waiting")
-    setTimeLeft(15)
   }, [gameState, playerFingerprint])
 
   // Handle timeout navigation with popup
@@ -196,7 +210,7 @@ export default function GamePage() {
     return () => clearTimeout(timer)
   }, [showTimeoutPopup, timeoutCountdown, navigate])
 
-  // Timer countdown
+  // UPDATED: Timer countdown - only run during active phases
   useEffect(() => {
     if (timeLeft <= 0 || currentPhase === "waiting" || currentPhase === "result") return
 
@@ -271,6 +285,9 @@ export default function GamePage() {
       </div>
     )
   }
+
+  // Rest of your component remains the same...
+  // [All the return JSX and other logic stays exactly the same]
 
   // Handle match termination UI
   if (matchTerminated) {
@@ -688,6 +705,9 @@ export default function GamePage() {
           <div className="debug-info" style={{ marginTop: '2rem' }}>
             <h4>Debug Info:</h4>
             <p><strong>Current Phase:</strong> {currentPhase}</p>
+            <p><strong>Time Left:</strong> {timeLeft}s</p>
+            <p><strong>Round Start Time:</strong> {roundStartTime ? new Date(roundStartTime).toLocaleTimeString() : 'Not set'}</p>
+            <p><strong>Timer Initialized:</strong> {timerInitialized ? 'Yes' : 'No'}</p>
             <p><strong>Is Player 1:</strong> {isPlayer1 ? "Yes" : "No"}</p>
             <p><strong>Is Player 2:</strong> {isPlayer2 ? "Yes" : "No"}</p>
             <p><strong>Connection Status:</strong> {connectionStatus}</p>
