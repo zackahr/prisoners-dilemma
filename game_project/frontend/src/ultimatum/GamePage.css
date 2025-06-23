@@ -2,7 +2,7 @@
 
 .game-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 25%, #10b981 50%, #3b82f6 75%, #6366f1 100%);
+  /* background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 25%, #10b981 50%, #3b82f6 75%, #6366f1 100%); */
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
   padding: 1.5rem 1rem;
@@ -170,6 +170,7 @@
 .game-card::before {
   content: "";
   position: absolute;
+  
   top: 0;
   left: 0;
   right: 0;
