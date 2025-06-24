@@ -1428,3 +1428,20 @@
 
 
 
+/* ─── Round-results overlay ─────────────────────────── */
+.results-overlay{
+  position:fixed;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.85);color:#fff;z-index:9998;text-align:center;
+  padding:2rem 1.25rem
+}
+.results-overlay h2{font-size:1.75rem;font-weight:800;margin-bottom:1.25rem}
+.results-overlay .grid{
+  display:grid;grid-template-columns:auto auto;
+  gap:.35rem 1.25rem;font-size:1rem;max-width:18rem;width:100%;margin-bottom:1.75rem
+}
+.results-overlay strong{font-size:1.15rem}
+@media(max-width:480px){
+  .results-overlay h2{font-size:1.35rem}
+  .results-overlay .grid{font-size:.9rem}
+}

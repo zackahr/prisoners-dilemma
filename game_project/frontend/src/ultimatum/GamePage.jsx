@@ -15,6 +15,30 @@ import PayoffsTable from "./PayoffsTable"
 import { useWebSocket } from "../hooks/useWebSocket"
 import { gameApi, getPlayerFingerprint } from "../services/gameApi"
 import "./GamePage.css"
+function RoundResults({ data, isP1 }) {
+  if (!data) return null;
+
+  return (
+    <div className="results-overlay">
+      <h2>Round {data.round_number} results</h2>
+
+      <div className="grid">
+        <div>P1 kept</div>   <div>${100 - data.p1_offer}</div>
+        <div>P1 offered</div> <div>${data.p1_offer}</div>
+        <div>P1 answer</div>  <div>{data.p2_response}</div>
+
+        <div>P2 kept</div>   <div>${100 - data.p2_offer}</div>
+        <div>P2 offered</div> <div>${data.p2_offer}</div>
+        <div>P2 answer</div>  <div>{data.p1_response}</div>
+
+        <div><strong>You earned</strong></div>
+        <div><strong>${isP1 ? data.p1_earned : data.p2_earned}</strong></div>
+      </div>
+
+      <p>Next round starts automatically…</p>
+    </div>
+  );
+}
 
 const MAX_ROUNDS = 25
 const TOTAL_MONEY = 100
@@ -36,7 +60,9 @@ export default function GamePage() {
   const [inputOffer, setInputOffer] = useState("")
   const [offerTimeLeft, setOfferTimeLeft] = useState(OFFER_TIME_LIMIT)      // NEW: Renamed from timeLeft
   const [responseTimeLeft, setResponseTimeLeft] = useState(RESPONSE_TIME_LIMIT) // NEW: Separate timer for responses
-  const [currentPhase, setCurrentPhase] = useState("waiting") // "waiting" | "offering" | "responding" | "result"
+  // const [currentPhase, setCurrentPhase] = useState("waiting") // "waiting" | "offering" | "responding" | "result"
+  
+  const [currentPhase, setCurrentPhase] = useState("waiting") // PHASES: waiting | offering | responding | roundSummary | gameOver
   
   // NEW: Track when the round actually started to maintain consistent timer
   const [roundStartTime, setRoundStartTime] = useState(null)
@@ -47,11 +73,11 @@ export default function GamePage() {
   const [timeoutCountdown, setTimeoutCountdown] = useState(5)
 
   const {
-    gameState, connectionStatus, error,
+    gameState,latestResults, connectionStatus, error,
     matchTerminated, terminationReason,
     sendMessage, disconnect
   } = useWebSocket(matchId, playerFingerprint);
-
+  const [results, setResults] = useState(null);
   useEffect(() => {
     const initializeMatch = async () => {
       if (urlMatchId) {
@@ -90,8 +116,22 @@ export default function GamePage() {
 
     initializeMatch()
   }, [gameMode, playerFingerprint, urlMatchId])
+useEffect(() => {
+  if (!latestResults) return;
 
-  // Handle match termination
+  setResults(latestResults);
+  setCurrentPhase("roundSummary");          // freeze timers/UI
+
+  const t = setTimeout(() => {
+    setResults(null);                       // hide overlay
+    // setCurrentPhase("waiting");             // resume next round
+    // setCurrentPhase(prev => prev);
+  }, 5000);                                 // 5 seconds ⏰
+
+  return () => clearTimeout(t);
+}, [latestResults]);
+
+
   useEffect(() => {
     if (matchTerminated) {
       const t = setTimeout(() => navigate("/ultimatum"), 2000);
@@ -99,7 +139,6 @@ export default function GamePage() {
     }
   }, [matchTerminated, navigate]);
 
-  // NEW: Initialize timers when a new round starts
   useEffect(() => {
     if (!gameState) return
 
@@ -135,7 +174,8 @@ export default function GamePage() {
     console.log("🎮 Processing game state update:", gameState)
 
     if (gameState.gameOver) {
-      setCurrentPhase("result")
+      // setCurrentPhase("result")
+      setCurrentPhase("gameOver")
       return
     }
 
@@ -223,8 +263,8 @@ export default function GamePage() {
 
   // NEW: Offer timer countdown - only for offering phase
   useEffect(() => {
-    if (offerTimeLeft <= 0 || currentPhase !== "offering") return
-
+    // if (offerTimeLeft <= 0 || currentPhase !== "offering") return
+    if (currentPhase === "roundSummary" || offerTimeLeft <= 0 || currentPhase !== "offering") return
     const timer = setTimeout(() => {
       setOfferTimeLeft((prev) => prev - 1)
     }, 1000)
@@ -233,8 +273,8 @@ export default function GamePage() {
 
   // NEW: Response timer countdown - only for responding phase
   useEffect(() => {
-    if (responseTimeLeft <= 0 || currentPhase !== "responding") return
-
+    // if (responseTimeLeft <= 0 || currentPhase !== "responding") return
+    if (currentPhase === "roundSummary" || responseTimeLeft <= 0 || currentPhase !== "responding") return
     const timer = setTimeout(() => {
       setResponseTimeLeft((prev) => prev - 1)
     }, 1000)
@@ -392,7 +432,8 @@ export default function GamePage() {
   }
 
   // Game over screen
-  if (currentPhase === "result" && gameState?.gameOver) {
+  // if (currentPhase === "result" && gameState?.gameOver) {
+  if (currentPhase === "gameOver" && gameState?.gameOver) {  
     return (
       <div className="game-over-page">
         <div className="game-over-container">
@@ -440,6 +481,7 @@ export default function GamePage() {
   // Main game interface
   return (
     <div className="game-page">
+      <RoundResults data={results} isP1={isPlayer1} />
       <TimeoutPopup />
       <div className="game-container">
         {/* Connection status */}
@@ -481,7 +523,9 @@ export default function GamePage() {
                 {currentPhase === "offering" && "MAKE YOUR OFFER"}
                 {currentPhase === "responding" && "RESPOND TO OFFERS"}
                 {currentPhase === "waiting" && "WAITING…"}
-                {currentPhase === "result" && "GAME COMPLETE"}
+                {/* {currentPhase === "result" && "GAME COMPLETE"} */
+                }
+                {currentPhase === "gameOver" && "GAME COMPLETE"}
               </h2>
             </div>
 

@@ -1,6 +1,6 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from asgiref.sync import sync_to_async
+from asgiref.sync import sync_to_async, async_to_sync
 from .models import UltimatumGameRound
 from .game_logic import update_game_stats
 import random
@@ -390,6 +390,25 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             logger.error(f"Error during force disconnect: {e}")
 
+    async def _broadcast_round_results(self, round_obj: UltimatumGameRound):
+        """Send a lightweight snapshot of the round that just ended."""
+        payload = {
+            "type": "round_results",               # <-- routing key
+            "round_number": round_obj.round_number,
+            "p1_offer": round_obj.player_1_coins_to_offer,
+            "p2_offer": round_obj.player_2_coins_to_offer,
+            "p1_response": round_obj.player_2_response_to_p1_offer,  # what P2 said to P1
+            "p2_response": round_obj.player_1_response_to_p2_offer,  # what P1 said to P2
+            "p1_earned": round_obj.player_1_coins_made_in_round,
+            "p2_earned": round_obj.player_2_coins_made_in_round,
+        }
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {"type": "round_results", "summary": payload},
+        )
+        # await self.channel_layer.group_send(self.room_group_name, payload)
+
+
     async def game_action(self, event):
         try:
             await self.send(text_data=json.dumps({
@@ -668,15 +687,60 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             current_round = UltimatumGameRound.objects.filter(
                 game_match_uuid=self.match_id
             ).order_by('-round_number').first()
-            
-            if current_round:
-                update_game_stats(self.match_id, current_round.round_number)
-                logger.info(f"Round results calculated for round {current_round.round_number} in match {self.match_id}")
-                return True
-            return False
+
+            if not current_round:
+                return False
+
+            # 1) write the numbers
+            update_game_stats(self.match_id, current_round.round_number)
+
+            # 🔥 2) pull the fresh values so p1_earned / p2_earned aren’t 0
+            current_round.refresh_from_db()          #  ← add this line
+
+            summary = {
+                "round_number": current_round.round_number,
+                "p1_offer":    current_round.player_1_coins_to_offer,
+                "p2_offer":    current_round.player_2_coins_to_offer,
+                "p1_response": current_round.player_2_response_to_p1_offer,
+                "p2_response": current_round.player_1_response_to_p2_offer,
+                "p1_earned":   current_round.player_1_coins_made_in_round,
+                "p2_earned":   current_round.player_2_coins_made_in_round,
+            }
+
+            # send to **every** socket in the match
+            async_to_sync(self.channel_layer.group_send)(
+                self.room_group_name,
+                {
+                    "type": "round_results",   # custom handler ↓
+                    "summary": summary,
+                },
+            )
+            return True
         except Exception as e:
             logger.error(f"Error calculating round results: {e}")
             return False
+    async def round_results(self, event):
+        # plain pass-through to the browser
+        await self.send(text_data=json.dumps({
+            "round_results": event["summary"]
+        }))
+
+    # @database_sync_to_async
+    # def calculate_round_results(self):
+    #     try:
+    #         current_round = UltimatumGameRound.objects.filter(
+    #             game_match_uuid=self.match_id
+    #         ).order_by('-round_number').first()
+            
+    #         if current_round:
+    #             update_game_stats(self.match_id, current_round.round_number)
+                
+    #             logger.info(f"Round results calculated for round {current_round.round_number} in match {self.match_id}")
+    #             return True
+    #         return False
+    #     except Exception as e:
+    #         logger.error(f"Error calculating round results: {e}")
+    #         return False
 
     @database_sync_to_async
     def create_next_round(self):
