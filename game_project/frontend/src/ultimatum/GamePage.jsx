@@ -8,6 +8,8 @@ import {
   WifiOff,
   Loader2,
   AlertTriangle,
+  Trophy,
+  X,
 } from "lucide-react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
@@ -16,9 +18,246 @@ import { useWebSocket } from "../hooks/useWebSocket"
 import { gameApi, getPlayerFingerprint } from "../services/gameApi"
 import "./GamePage.css"
 
+// Round Results Popup Modal Component
+// function RoundResultsModal({ data, isP1, isOpen, onClose }) {
+//   const [countdown, setCountdown] = useState(5);
+
+//   useEffect(() => {
+//     if (!isOpen) return;
+
+//     setCountdown(5);
+    
+//     const timer = setInterval(() => {
+//       setCountdown(prev => {
+//         if (prev <= 1) {
+//           clearInterval(timer);
+//           onClose();
+//           return 0;
+//         }
+//         return prev - 1;
+//       });
+//     }, 1000);
+
+//     return () => clearInterval(timer);
+//   }, [isOpen, onClose]);
+
+//   if (!isOpen || !data) return null;
+
+//   return (
+//     <div className="modal-overlay">
+//       <div className="modal-container round-results-modal">
+//         <div className="modal-header">
+//           <div className="modal-icon">
+//             <Trophy className="trophy-icon" />
+//           </div>
+//           <h2 className="modal-title">Round {data.round_number} Results</h2>
+//           <button 
+//             className="modal-close-btn"
+//             onClick={onClose}
+//             aria-label="Close"
+//           >
+//             <X size={20} />
+//           </button>
+//         </div>
+
+//         <div className="modal-content">
+//           <div className="results-grid">
+//             <div className="player-section">
+//               <h3 className="player-title">Player 1</h3>
+//               <div className="result-item">
+//                 <span className="result-label">Kept:</span>
+//                 <span className="result-value">${100 - data.p1_offer}</span>
+//               </div>
+//               <div className="result-item">
+//                 <span className="result-label">Offered:</span>
+//                 <span className="result-value">${data.p1_offer}</span>
+//               </div>
+//               <div className="result-item">
+//                 <span className="result-label">Response:</span>
+//                 <span className={`result-value response ${data.p2_response}`}>
+//                   {data.p2_response}
+//                 </span>
+//               </div>
+//             </div>
+
+//             <div className="player-section">
+//               <h3 className="player-title">Player 2</h3>
+//               <div className="result-item">
+//                 <span className="result-label">Kept:</span>
+//                 <span className="result-value">${100 - data.p2_offer}</span>
+//               </div>
+//               <div className="result-item">
+//                 <span className="result-label">Offered:</span>
+//                 <span className="result-value">${data.p2_offer}</span>
+//               </div>
+//               <div className="result-item">
+//                 <span className="result-label">Response:</span>
+//                 <span className={`result-value response ${data.p1_response}`}>
+//                   {data.p1_response}
+//                 </span>
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="earnings-section">
+//             <div className="your-earnings">
+//               <span className="earnings-label">You earned this round:</span>
+//               <span className="earnings-amount">
+//                 ${isP1 ? data.p1_earned : data.p2_earned}
+//               </span>
+//             </div>
+//           </div>
+//         </div>
+
+//         <div className="modal-footer">
+//           <div className="auto-close-info">
+//             <p>Next round starts automatically in <strong>{countdown}</strong> seconds</p>
+//           </div>
+//           <button 
+//             className="continue-btn"
+//             onClick={onClose}
+//           >
+//             Continue Now
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+// Round Results Popup Modal Component
+function RoundResultsModal({ data, isP1, isOpen, onClose }) {
+  const [countdown, setCountdown] = useState(5);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setCountdown(5);
+    
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          onClose();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !data) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-container round-results-modal">
+        <div className="modal-header">
+          <div className="modal-icon">
+            <Trophy className="trophy-icon" />
+          </div>
+          <h2 className="modal-title">Round {data.round_number} Results</h2>
+          <button 
+            className="modal-close-btn"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="modal-content">
+          <div className="results-grid">
+            <div className="player-section">
+              <h3 className="player-title">Player 1</h3>
+              <div className="result-item">
+                <span className="result-label">Kept:</span>
+                <span className="result-value">${100 - data.p1_offer}</span>
+              </div>
+              <div className="result-item">
+                <span className="result-label">Offered:</span>
+                <span className="result-value">${data.p1_offer}</span>
+              </div>
+              <div className="result-item">
+                <span className="result-label">Response:</span>
+                <span className={`result-value response ${data.p2_response}`}>
+                  {data.p2_response}
+                </span>
+              </div>
+              {/* NEW: Add P1 earnings */}
+              <div className="result-item earnings-item">
+                <span className="result-label"><strong>Earned:</strong></span>
+                <span className="result-value earnings-value">
+                  <strong>${data.p1_earned}</strong>
+                </span>
+              </div>
+            </div>
+
+            <div className="player-section">
+              <h3 className="player-title">Player 2</h3>
+              <div className="result-item">
+                <span className="result-label">Kept:</span>
+                <span className="result-value">${100 - data.p2_offer}</span>
+              </div>
+              <div className="result-item">
+                <span className="result-label">Offered:</span>
+                <span className="result-value">${data.p2_offer}</span>
+              </div>
+              <div className="result-item">
+                <span className="result-label">Response:</span>
+                <span className={`result-value response ${data.p1_response}`}>
+                  {data.p1_response}
+                </span>
+              </div>
+              {/* NEW: Add P2 earnings */}
+              <div className="result-item earnings-item">
+                <span className="result-label"><strong>Earned:</strong></span>
+                <span className="result-value earnings-value">
+                  <strong>${data.p2_earned}</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced earnings section with more detail */}
+          <div className="earnings-section">
+            <div className="your-earnings">
+              <span className="earnings-label">You earned this round:</span>
+              <span className="earnings-amount">
+                ${isP1 ? data.p1_earned : data.p2_earned}
+              </span>
+            </div>
+            
+            {/* NEW: Add total earnings breakdown */}
+            <div className="earnings-breakdown">
+              <div className="earnings-detail">
+                <span>Player 1 Total: ${data.p1_earned}</span>
+                <span>Player 2 Total: ${data.p2_earned}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="modal-footer">
+          <div className="auto-close-info">
+            <p>Next round starts automatically in <strong>{countdown}</strong> seconds</p>
+          </div>
+          <button 
+            className="continue-btn"
+            onClick={onClose}
+          >
+            Continue Now
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const MAX_ROUNDS = 25
 const TOTAL_MONEY = 100
 const OFFER_TIME_LIMIT = 25
+const RESPONSE_TIME_LIMIT = 10
 
 export default function GamePage() {
   const navigate = useNavigate()
@@ -31,12 +270,17 @@ export default function GamePage() {
   const [matchId, setMatchId] = useState(urlMatchId)
   const [isInitializing, setIsInitializing] = useState(true)
 
-  // Game state for simultaneous play - UPDATED to use coins_to_offer
+  // Game state for simultaneous play
   const [inputOffer, setInputOffer] = useState("")
-  const [timeLeft, setTimeLeft] = useState(OFFER_TIME_LIMIT)
-  const [currentPhase, setCurrentPhase] = useState("waiting") // "waiting" | "offering" | "responding" | "result"
+  const [offerTimeLeft, setOfferTimeLeft] = useState(OFFER_TIME_LIMIT)
+  const [responseTimeLeft, setResponseTimeLeft] = useState(RESPONSE_TIME_LIMIT)
+  const [currentPhase, setCurrentPhase] = useState("waiting")
   
-  // NEW: Track when the round actually started to maintain consistent timer
+  // Round results modal state
+  const [showRoundResults, setShowRoundResults] = useState(false)
+  const [roundResultsData, setRoundResultsData] = useState(null)
+  
+  // Timer management
   const [roundStartTime, setRoundStartTime] = useState(null)
   const [timerInitialized, setTimerInitialized] = useState(false)
   
@@ -45,10 +289,36 @@ export default function GamePage() {
   const [timeoutCountdown, setTimeoutCountdown] = useState(5)
 
   const {
-    gameState, connectionStatus, error,
+    gameState, latestResults, connectionStatus, error,
     matchTerminated, terminationReason,
     sendMessage, disconnect
   } = useWebSocket(matchId, playerFingerprint);
+
+  // Handle round results
+  useEffect(() => {
+    if (!latestResults) return;
+
+    console.log("📊 Received round results:", latestResults);
+    setRoundResultsData(latestResults);
+    setShowRoundResults(true);
+    // Don't change phase here - let the modal handle the timing
+  }, [latestResults]);
+
+  // Handle round results modal close
+  const handleRoundResultsClose = useCallback(() => {
+    console.log("⏰ Closing round results modal");
+    setShowRoundResults(false);
+    setRoundResultsData(null);
+    
+    // Check if game is over before transitioning
+    if (gameState?.gameOver) {
+      console.log("🏁 Game is over, transitioning to game over screen");
+      setCurrentPhase("gameOver");
+    } else {
+      console.log("▶️ Game continues, transitioning to waiting phase");
+      setCurrentPhase("waiting");
+    }
+  }, [gameState?.gameOver]);
 
   useEffect(() => {
     const initializeMatch = async () => {
@@ -60,7 +330,6 @@ export default function GamePage() {
         return
       }
 
-      // QUICK FIX: Bypass API for bot mode
       if (gameMode === "bot") {
         const { match_id } = await gameApi.createMatch("bot", playerFingerprint);
         setMatchId(match_id);
@@ -77,7 +346,6 @@ export default function GamePage() {
       } catch (err) {
         console.error("❌ Failed to initialize match:", err)
         
-        // FALLBACK: Create a temporary match ID
         const fallbackMatchId = `fallback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         console.log("🔄 Using fallback match ID:", fallbackMatchId)
         setMatchId(fallbackMatchId)
@@ -88,7 +356,7 @@ export default function GamePage() {
 
     initializeMatch()
   }, [gameMode, playerFingerprint, urlMatchId])
-  // Handle match termination
+
   useEffect(() => {
     if (matchTerminated) {
       const t = setTimeout(() => navigate("/ultimatum"), 2000);
@@ -96,7 +364,6 @@ export default function GamePage() {
     }
   }, [matchTerminated, navigate]);
 
-  // NEW: Initialize timer when a new round starts
   useEffect(() => {
     if (!gameState) return
 
@@ -112,9 +379,10 @@ export default function GamePage() {
     )
 
     if (isNewRound && (!roundStartTime || !timerInitialized)) {
-      console.log("🕐 Initializing timer for new round:", currentRoundNumber)
+      console.log("🕐 Initializing timers for new round:", currentRoundNumber)
       setRoundStartTime(Date.now())
-      setTimeLeft(OFFER_TIME_LIMIT)
+      setOfferTimeLeft(OFFER_TIME_LIMIT)
+      setResponseTimeLeft(RESPONSE_TIME_LIMIT)
       setTimerInitialized(true)
     }
 
@@ -124,14 +392,17 @@ export default function GamePage() {
     }
   }, [gameState, roundStartTime, timerInitialized])
 
-  // UPDATED: Determine current phase based on game state (without resetting timer)
+  // Determine current phase
   useEffect(() => {
     if (!gameState) return
+    
+    // Don't change phase if showing round results
+    if (showRoundResults) return
 
     console.log("🎮 Processing game state update:", gameState)
 
     if (gameState.gameOver) {
-      setCurrentPhase("result")
+      setCurrentPhase("gameOver")
       return
     }
 
@@ -151,40 +422,38 @@ export default function GamePage() {
     const myResponseMade = isPlayer1 ? currentRound.player1ResponseMade : currentRound.player2ResponseMade
     const bothOffersMade = currentRound.player1OfferMade && currentRound.player2OfferMade
 
-    console.log("🎯 Phase analysis:", {
-      isPlayer1,
-      myOfferMade,
-      myResponseMade,
-      bothOffersMade,
-      currentRound
-    })
+    // Determine phase and reset response timer when entering responding phase
+    const newPhase = !myOfferMade ? "offering" : 
+                     bothOffersMade && !myResponseMade ? "responding" : 
+                     "waiting"
 
-    // Determine phase WITHOUT resetting timer
-    if (!myOfferMade) {
-      setCurrentPhase("offering")
-    } else if (bothOffersMade && !myResponseMade) {
-      setCurrentPhase("responding")
-    } else {
-      setCurrentPhase("waiting")
+    // Reset response timer when entering responding phase
+    if (currentPhase !== "responding" && newPhase === "responding") {
+      console.log("🕐 Entering responding phase - resetting response timer")
+      setResponseTimeLeft(RESPONSE_TIME_LIMIT)
     }
-  }, [gameState, playerFingerprint])
+
+    setCurrentPhase(newPhase)
+  }, [gameState, playerFingerprint, currentPhase, showRoundResults])
 
   // Handle timeout navigation with popup
   useEffect(() => {
-    if (timeLeft <= 0 &&
-        (currentPhase === "offering" || currentPhase === "responding")) {
-      console.log("⏰ Time's up! Showing timeout popup")
+    const isOfferTimeout = offerTimeLeft <= 0 && currentPhase === "offering"
+    const isResponseTimeout = responseTimeLeft <= 0 && currentPhase === "responding"
+    
+    if (isOfferTimeout || isResponseTimeout) {
+      console.log("⏰ Time's up! Showing timeout popup", { isOfferTimeout, isResponseTimeout })
       setShowTimeoutPopup(true)
       setTimeoutCountdown(5)
     }
-  }, [timeLeft, currentPhase]);
+  }, [offerTimeLeft, responseTimeLeft, currentPhase]);
+
   useEffect(() => {
-    // const handlePop = () => disconnect();     // browser back-button
-      const handlePop = () => {                 // browser back-button
-        disconnect();                           // close WS  notify server
-        navigate("/ultimatum", { replace: true });
-      };
-    const handleUnload = () => disconnect();  // tab closing / reload
+    const handlePop = () => {
+      disconnect();
+      navigate("/ultimatum", { replace: true });
+    };
+    const handleUnload = () => disconnect();
     window.addEventListener("popstate", handlePop);
     window.addEventListener("beforeunload", handleUnload);
     return () => {
@@ -192,6 +461,7 @@ export default function GamePage() {
       window.removeEventListener("beforeunload", handleUnload);
     };
   }, [disconnect]);
+
   // Handle timeout popup countdown
   useEffect(() => {
     if (!showTimeoutPopup) return
@@ -210,17 +480,25 @@ export default function GamePage() {
     return () => clearTimeout(timer)
   }, [showTimeoutPopup, timeoutCountdown, navigate])
 
-  // UPDATED: Timer countdown - only run during active phases
+  // Offer timer countdown
   useEffect(() => {
-    if (timeLeft <= 0 || currentPhase === "waiting" || currentPhase === "result") return
-
+    if (showRoundResults || offerTimeLeft <= 0 || currentPhase !== "offering") return
     const timer = setTimeout(() => {
-      setTimeLeft((prev) => prev - 1)
+      setOfferTimeLeft((prev) => prev - 1)
     }, 1000)
     return () => clearTimeout(timer)
-  }, [timeLeft, currentPhase])
+  }, [offerTimeLeft, currentPhase, showRoundResults])
 
-  // Submit offer - UPDATED to send coins_to_keep and coins_to_offer
+  // Response timer countdown
+  useEffect(() => {
+    if (showRoundResults || responseTimeLeft <= 0 || currentPhase !== "responding") return
+    const timer = setTimeout(() => {
+      setResponseTimeLeft((prev) => prev - 1)
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [responseTimeLeft, currentPhase, showRoundResults])
+
+  // Submit offer
   const submitOffer = useCallback(() => {
     const coinsToOffer = Math.max(0, Math.min(+inputOffer || 0, TOTAL_MONEY))
     const coinsToKeep = TOTAL_MONEY - coinsToOffer
@@ -262,18 +540,32 @@ export default function GamePage() {
   const isPlayer1 = gameState?.player1Fingerprint === playerFingerprint
   const isPlayer2 = gameState?.player2Fingerprint === playerFingerprint
 
+  // Helper to get current timer value based on phase
+  const getCurrentTimeLeft = () => {
+    if (currentPhase === "offering") return offerTimeLeft
+    if (currentPhase === "responding") return responseTimeLeft
+    return 0
+  }
+
   // Timeout Popup Component
   const TimeoutPopup = () => {
     if (!showTimeoutPopup) return null
 
     return (
-      <div className="timeout-popup-overlay">
-        <div className="timeout-popup">
-          <div className="timeout-popup-content">
-            <AlertTriangle className="timeout-icon" />
-            <h2 className="timeout-title">Time's Up!</h2>
+      <div className="modal-overlay">
+        <div className="modal-container timeout-modal">
+          <div className="modal-header">
+            <div className="modal-icon">
+              <AlertTriangle className="timeout-icon" />
+            </div>
+            <h2 className="modal-title">Time's Up!</h2>
+          </div>
+          <div className="modal-content">
             <p className="timeout-message">
-              The 25 seconds have passed. You will be redirected to the menu.
+              {currentPhase === "offering" 
+                ? `The ${OFFER_TIME_LIMIT} seconds for making offers have passed.`
+                : `The ${RESPONSE_TIME_LIMIT} seconds for responding have passed.`
+              } You will be redirected to the menu.
             </p>
             <div className="timeout-countdown">
               <div className="countdown-circle">
@@ -285,9 +577,6 @@ export default function GamePage() {
       </div>
     )
   }
-
-  // Rest of your component remains the same...
-  // [All the return JSX and other logic stays exactly the same]
 
   // Handle match termination UI
   if (matchTerminated) {
@@ -364,7 +653,7 @@ export default function GamePage() {
   }
 
   // Game over screen
-  if (currentPhase === "result" && gameState?.gameOver) {
+  if (currentPhase === "gameOver" && gameState?.gameOver) {  
     return (
       <div className="game-over-page">
         <div className="game-over-container">
@@ -402,8 +691,6 @@ export default function GamePage() {
               Back to Menu
             </button>
           </div>
-
-          {/* <PayoffsTable history={gameState.roundHistory || []} /> */}
         </div>
       </div>
     )
@@ -412,7 +699,17 @@ export default function GamePage() {
   // Main game interface
   return (
     <div className="game-page">
+      {/* Round Results Modal */}
+      <RoundResultsModal 
+        data={roundResultsData}
+        isP1={isPlayer1}
+        isOpen={showRoundResults}
+        onClose={handleRoundResultsClose}
+      />
+      
+      {/* Timeout Popup */}
       <TimeoutPopup />
+      
       <div className="game-container">
         {/* Connection status */}
         <div className="connection-status">
@@ -447,13 +744,13 @@ export default function GamePage() {
             <div className="game-card-header">
               <div className="timer">
                 <Clock className="timer-icon" />
-                <span>{timeLeft}s</span>
+                <span>{getCurrentTimeLeft()}s</span>
               </div>
               <h2 className="phase-title">
                 {currentPhase === "offering" && "MAKE YOUR OFFER"}
                 {currentPhase === "responding" && "RESPOND TO OFFERS"}
                 {currentPhase === "waiting" && "WAITING…"}
-                {currentPhase === "result" && "GAME COMPLETE"}
+                {currentPhase === "gameOver" && "GAME COMPLETE"}
               </h2>
             </div>
 
@@ -481,7 +778,7 @@ export default function GamePage() {
                 </div>
               )}
 
-              {/* Offering phase - UPDATED to show coins breakdown */}
+              {/* Offering phase */}
               {currentPhase === "offering" && !gameState?.waitingForOpponent && (
                 <div className="offer-section">
                   <p className="offer-label">How much will you offer your opponent?</p>
@@ -497,20 +794,16 @@ export default function GamePage() {
                       value={inputOffer}
                       onChange={(e) => {
                         const value = e.target.value;
-                        // Allow empty string for clearing the input
                         if (value === '') {
                           setInputOffer('');
                           return;
                         }
                         
-                        // Convert to number and validate
                         const numValue = Number(value);
                         
-                        // Only allow values between 0 and TOTAL_MONEY (100)
                         if (!isNaN(numValue) && numValue >= 0 && numValue <= TOTAL_MONEY) {
                           setInputOffer(value);
                         }
-                        // If value is greater than TOTAL_MONEY, set it to TOTAL_MONEY
                         else if (!isNaN(numValue) && numValue > TOTAL_MONEY) {
                           setInputOffer(TOTAL_MONEY.toString());
                         }
@@ -522,7 +815,6 @@ export default function GamePage() {
                       className="offer-input"
                       autoFocus
                       onKeyDown={(e) => {
-                        // Prevent entering 'e', 'E', '+', '-' which are valid in number inputs but not wanted here
                         if (['e', 'E', '+', '-'].includes(e.key)) {
                           e.preventDefault();
                         }
@@ -540,12 +832,12 @@ export default function GamePage() {
                 </div>
               )}
 
-              {/* Responding phase - UPDATED to show new logic */}
+              {/* Responding phase */}
               {currentPhase === "responding" && gameState?.currentRoundState && (
                 <div className="responding-section">
                   <h3>Respond to Offers:</h3>
                   
-                  {/* Response to opponent's offer - UPDATED */}
+                  {/* Response to opponent's offer */}
                   {isPlayer1 && gameState.currentRoundState.player2CoinsToOffer !== null && (
                     <div className="offer-response-card">
                       <div className="offer-display">
@@ -705,7 +997,9 @@ export default function GamePage() {
           <div className="debug-info" style={{ marginTop: '2rem' }}>
             <h4>Debug Info:</h4>
             <p><strong>Current Phase:</strong> {currentPhase}</p>
-            <p><strong>Time Left:</strong> {timeLeft}s</p>
+            <p><strong>Offer Time Left:</strong> {offerTimeLeft}s</p>
+            <p><strong>Response Time Left:</strong> {responseTimeLeft}s</p>
+            <p><strong>Show Round Results:</strong> {showRoundResults ? 'Yes' : 'No'}</p>
             <p><strong>Round Start Time:</strong> {roundStartTime ? new Date(roundStartTime).toLocaleTimeString() : 'Not set'}</p>
             <p><strong>Timer Initialized:</strong> {timerInitialized ? 'Yes' : 'No'}</p>
             <p><strong>Is Player 1:</strong> {isPlayer1 ? "Yes" : "No"}</p>

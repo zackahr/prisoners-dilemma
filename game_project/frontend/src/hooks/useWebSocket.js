@@ -19,6 +19,8 @@ export const useWebSocket = (matchId, playerFingerprint) => {
   const maxReconnectAttempts = 5
   const OFFER_TIME_LIMIT = 15;
   const [terminationReason, setTerminationReason]   = useState(null);  // NEW
+  // top of hook
+  const [latestResults, setLatestResults] = useState(null);
 
   const connect = useCallback(() => {
     if (!matchId || !playerFingerprint) {
@@ -109,6 +111,12 @@ export const useWebSocket = (matchId, playerFingerprint) => {
               player1Score: data.player1_score || 0,
               player2Score: data.player2_score || 0,
             }))
+          }
+          if (data.round_results) {
+            console.log("🏆 Round results:", data.round_results);
+            setLatestResults(data.round_results);
+            setTimeout(() => setLatestResults(null),              // ← auto-clear
+           3500);
           }
 
           // Handle simultaneous game actions - UPDATED for new field names
@@ -296,6 +304,7 @@ export const useWebSocket = (matchId, playerFingerprint) => {
   return {
     socket,
     gameState,
+    latestResults,
     connectionStatus,
     error,
     matchTerminated,
