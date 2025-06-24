@@ -19,6 +19,112 @@ import { gameApi, getPlayerFingerprint } from "../services/gameApi"
 import "./GamePage.css"
 
 // Round Results Popup Modal Component
+// function RoundResultsModal({ data, isP1, isOpen, onClose }) {
+//   const [countdown, setCountdown] = useState(5);
+
+//   useEffect(() => {
+//     if (!isOpen) return;
+
+//     setCountdown(5);
+    
+//     const timer = setInterval(() => {
+//       setCountdown(prev => {
+//         if (prev <= 1) {
+//           clearInterval(timer);
+//           onClose();
+//           return 0;
+//         }
+//         return prev - 1;
+//       });
+//     }, 1000);
+
+//     return () => clearInterval(timer);
+//   }, [isOpen, onClose]);
+
+//   if (!isOpen || !data) return null;
+
+//   return (
+//     <div className="modal-overlay">
+//       <div className="modal-container round-results-modal">
+//         <div className="modal-header">
+//           <div className="modal-icon">
+//             <Trophy className="trophy-icon" />
+//           </div>
+//           <h2 className="modal-title">Round {data.round_number} Results</h2>
+//           <button 
+//             className="modal-close-btn"
+//             onClick={onClose}
+//             aria-label="Close"
+//           >
+//             <X size={20} />
+//           </button>
+//         </div>
+
+//         <div className="modal-content">
+//           <div className="results-grid">
+//             <div className="player-section">
+//               <h3 className="player-title">Player 1</h3>
+//               <div className="result-item">
+//                 <span className="result-label">Kept:</span>
+//                 <span className="result-value">${100 - data.p1_offer}</span>
+//               </div>
+//               <div className="result-item">
+//                 <span className="result-label">Offered:</span>
+//                 <span className="result-value">${data.p1_offer}</span>
+//               </div>
+//               <div className="result-item">
+//                 <span className="result-label">Response:</span>
+//                 <span className={`result-value response ${data.p2_response}`}>
+//                   {data.p2_response}
+//                 </span>
+//               </div>
+//             </div>
+
+//             <div className="player-section">
+//               <h3 className="player-title">Player 2</h3>
+//               <div className="result-item">
+//                 <span className="result-label">Kept:</span>
+//                 <span className="result-value">${100 - data.p2_offer}</span>
+//               </div>
+//               <div className="result-item">
+//                 <span className="result-label">Offered:</span>
+//                 <span className="result-value">${data.p2_offer}</span>
+//               </div>
+//               <div className="result-item">
+//                 <span className="result-label">Response:</span>
+//                 <span className={`result-value response ${data.p1_response}`}>
+//                   {data.p1_response}
+//                 </span>
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="earnings-section">
+//             <div className="your-earnings">
+//               <span className="earnings-label">You earned this round:</span>
+//               <span className="earnings-amount">
+//                 ${isP1 ? data.p1_earned : data.p2_earned}
+//               </span>
+//             </div>
+//           </div>
+//         </div>
+
+//         <div className="modal-footer">
+//           <div className="auto-close-info">
+//             <p>Next round starts automatically in <strong>{countdown}</strong> seconds</p>
+//           </div>
+//           <button 
+//             className="continue-btn"
+//             onClick={onClose}
+//           >
+//             Continue Now
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+// Round Results Popup Modal Component
 function RoundResultsModal({ data, isP1, isOpen, onClose }) {
   const [countdown, setCountdown] = useState(5);
 
@@ -78,6 +184,13 @@ function RoundResultsModal({ data, isP1, isOpen, onClose }) {
                   {data.p2_response}
                 </span>
               </div>
+              {/* NEW: Add P1 earnings */}
+              <div className="result-item earnings-item">
+                <span className="result-label"><strong>Earned:</strong></span>
+                <span className="result-value earnings-value">
+                  <strong>${data.p1_earned}</strong>
+                </span>
+              </div>
             </div>
 
             <div className="player-section">
@@ -96,15 +209,31 @@ function RoundResultsModal({ data, isP1, isOpen, onClose }) {
                   {data.p1_response}
                 </span>
               </div>
+              {/* NEW: Add P2 earnings */}
+              <div className="result-item earnings-item">
+                <span className="result-label"><strong>Earned:</strong></span>
+                <span className="result-value earnings-value">
+                  <strong>${data.p2_earned}</strong>
+                </span>
+              </div>
             </div>
           </div>
 
+          {/* Enhanced earnings section with more detail */}
           <div className="earnings-section">
             <div className="your-earnings">
               <span className="earnings-label">You earned this round:</span>
               <span className="earnings-amount">
                 ${isP1 ? data.p1_earned : data.p2_earned}
               </span>
+            </div>
+            
+            {/* NEW: Add total earnings breakdown */}
+            <div className="earnings-breakdown">
+              <div className="earnings-detail">
+                <span>Player 1 Total: ${data.p1_earned}</span>
+                <span>Player 2 Total: ${data.p2_earned}</span>
+              </div>
             </div>
           </div>
         </div>
