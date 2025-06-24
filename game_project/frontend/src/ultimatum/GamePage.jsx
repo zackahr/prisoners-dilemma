@@ -19,6 +19,7 @@ import "./GamePage.css"
 const MAX_ROUNDS = 25
 const TOTAL_MONEY = 100
 const OFFER_TIME_LIMIT = 25
+const RESPONSE_TIME_LIMIT = 10  // NEW: Separate timer for responses
 
 export default function GamePage() {
   const navigate = useNavigate()
@@ -33,7 +34,8 @@ export default function GamePage() {
 
   // Game state for simultaneous play - UPDATED to use coins_to_offer
   const [inputOffer, setInputOffer] = useState("")
-  const [timeLeft, setTimeLeft] = useState(OFFER_TIME_LIMIT)
+  const [offerTimeLeft, setOfferTimeLeft] = useState(OFFER_TIME_LIMIT)      // NEW: Renamed from timeLeft
+  const [responseTimeLeft, setResponseTimeLeft] = useState(RESPONSE_TIME_LIMIT) // NEW: Separate timer for responses
   const [currentPhase, setCurrentPhase] = useState("waiting") // "waiting" | "offering" | "responding" | "result"
   
   // NEW: Track when the round actually started to maintain consistent timer
@@ -88,6 +90,7 @@ export default function GamePage() {
 
     initializeMatch()
   }, [gameMode, playerFingerprint, urlMatchId])
+
   // Handle match termination
   useEffect(() => {
     if (matchTerminated) {
@@ -96,7 +99,7 @@ export default function GamePage() {
     }
   }, [matchTerminated, navigate]);
 
-  // NEW: Initialize timer when a new round starts
+  // NEW: Initialize timers when a new round starts
   useEffect(() => {
     if (!gameState) return
 
@@ -112,9 +115,10 @@ export default function GamePage() {
     )
 
     if (isNewRound && (!roundStartTime || !timerInitialized)) {
-      console.log("🕐 Initializing timer for new round:", currentRoundNumber)
+      console.log("🕐 Initializing timers for new round:", currentRoundNumber)
       setRoundStartTime(Date.now())
-      setTimeLeft(OFFER_TIME_LIMIT)
+      setOfferTimeLeft(OFFER_TIME_LIMIT)
+      setResponseTimeLeft(RESPONSE_TIME_LIMIT)
       setTimerInitialized(true)
     }
 
@@ -124,7 +128,7 @@ export default function GamePage() {
     }
   }, [gameState, roundStartTime, timerInitialized])
 
-  // UPDATED: Determine current phase based on game state (without resetting timer)
+  // UPDATED: Determine current phase and reset response timer when entering responding phase
   useEffect(() => {
     if (!gameState) return
 
@@ -159,32 +163,38 @@ export default function GamePage() {
       currentRound
     })
 
-    // Determine phase WITHOUT resetting timer
-    if (!myOfferMade) {
-      setCurrentPhase("offering")
-    } else if (bothOffersMade && !myResponseMade) {
-      setCurrentPhase("responding")
-    } else {
-      setCurrentPhase("waiting")
-    }
-  }, [gameState, playerFingerprint])
+    // Determine phase and reset response timer when entering responding phase
+    const newPhase = !myOfferMade ? "offering" : 
+                     bothOffersMade && !myResponseMade ? "responding" : 
+                     "waiting"
 
-  // Handle timeout navigation with popup
+    // NEW: Reset response timer when entering responding phase
+    if (currentPhase !== "responding" && newPhase === "responding") {
+      console.log("🕐 Entering responding phase - resetting response timer")
+      setResponseTimeLeft(RESPONSE_TIME_LIMIT)
+    }
+
+    setCurrentPhase(newPhase)
+  }, [gameState, playerFingerprint, currentPhase])
+
+  // NEW: Handle timeout navigation with popup - updated to check both timers
   useEffect(() => {
-    if (timeLeft <= 0 &&
-        (currentPhase === "offering" || currentPhase === "responding")) {
-      console.log("⏰ Time's up! Showing timeout popup")
+    const isOfferTimeout = offerTimeLeft <= 0 && currentPhase === "offering"
+    const isResponseTimeout = responseTimeLeft <= 0 && currentPhase === "responding"
+    
+    if (isOfferTimeout || isResponseTimeout) {
+      console.log("⏰ Time's up! Showing timeout popup", { isOfferTimeout, isResponseTimeout })
       setShowTimeoutPopup(true)
       setTimeoutCountdown(5)
     }
-  }, [timeLeft, currentPhase]);
+  }, [offerTimeLeft, responseTimeLeft, currentPhase]);
+
   useEffect(() => {
-    // const handlePop = () => disconnect();     // browser back-button
-      const handlePop = () => {                 // browser back-button
-        disconnect();                           // close WS  notify server
-        navigate("/ultimatum", { replace: true });
-      };
-    const handleUnload = () => disconnect();  // tab closing / reload
+    const handlePop = () => {
+      disconnect();
+      navigate("/ultimatum", { replace: true });
+    };
+    const handleUnload = () => disconnect();
     window.addEventListener("popstate", handlePop);
     window.addEventListener("beforeunload", handleUnload);
     return () => {
@@ -192,6 +202,7 @@ export default function GamePage() {
       window.removeEventListener("beforeunload", handleUnload);
     };
   }, [disconnect]);
+
   // Handle timeout popup countdown
   useEffect(() => {
     if (!showTimeoutPopup) return
@@ -210,15 +221,25 @@ export default function GamePage() {
     return () => clearTimeout(timer)
   }, [showTimeoutPopup, timeoutCountdown, navigate])
 
-  // UPDATED: Timer countdown - only run during active phases
+  // NEW: Offer timer countdown - only for offering phase
   useEffect(() => {
-    if (timeLeft <= 0 || currentPhase === "waiting" || currentPhase === "result") return
+    if (offerTimeLeft <= 0 || currentPhase !== "offering") return
 
     const timer = setTimeout(() => {
-      setTimeLeft((prev) => prev - 1)
+      setOfferTimeLeft((prev) => prev - 1)
     }, 1000)
     return () => clearTimeout(timer)
-  }, [timeLeft, currentPhase])
+  }, [offerTimeLeft, currentPhase])
+
+  // NEW: Response timer countdown - only for responding phase
+  useEffect(() => {
+    if (responseTimeLeft <= 0 || currentPhase !== "responding") return
+
+    const timer = setTimeout(() => {
+      setResponseTimeLeft((prev) => prev - 1)
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [responseTimeLeft, currentPhase])
 
   // Submit offer - UPDATED to send coins_to_keep and coins_to_offer
   const submitOffer = useCallback(() => {
@@ -262,6 +283,13 @@ export default function GamePage() {
   const isPlayer1 = gameState?.player1Fingerprint === playerFingerprint
   const isPlayer2 = gameState?.player2Fingerprint === playerFingerprint
 
+  // NEW: Helper to get current timer value based on phase
+  const getCurrentTimeLeft = () => {
+    if (currentPhase === "offering") return offerTimeLeft
+    if (currentPhase === "responding") return responseTimeLeft
+    return 0
+  }
+
   // Timeout Popup Component
   const TimeoutPopup = () => {
     if (!showTimeoutPopup) return null
@@ -273,7 +301,10 @@ export default function GamePage() {
             <AlertTriangle className="timeout-icon" />
             <h2 className="timeout-title">Time's Up!</h2>
             <p className="timeout-message">
-              The 25 seconds have passed. You will be redirected to the menu.
+              {currentPhase === "offering" 
+                ? `The ${OFFER_TIME_LIMIT} seconds for making offers have passed.`
+                : `The ${RESPONSE_TIME_LIMIT} seconds for responding have passed.`
+              } You will be redirected to the menu.
             </p>
             <div className="timeout-countdown">
               <div className="countdown-circle">
@@ -285,9 +316,6 @@ export default function GamePage() {
       </div>
     )
   }
-
-  // Rest of your component remains the same...
-  // [All the return JSX and other logic stays exactly the same]
 
   // Handle match termination UI
   if (matchTerminated) {
@@ -447,7 +475,7 @@ export default function GamePage() {
             <div className="game-card-header">
               <div className="timer">
                 <Clock className="timer-icon" />
-                <span>{timeLeft}s</span>
+                <span>{getCurrentTimeLeft()}s</span> {/* UPDATED: Use dynamic timer */}
               </div>
               <h2 className="phase-title">
                 {currentPhase === "offering" && "MAKE YOUR OFFER"}
@@ -705,7 +733,8 @@ export default function GamePage() {
           <div className="debug-info" style={{ marginTop: '2rem' }}>
             <h4>Debug Info:</h4>
             <p><strong>Current Phase:</strong> {currentPhase}</p>
-            <p><strong>Time Left:</strong> {timeLeft}s</p>
+            <p><strong>Offer Time Left:</strong> {offerTimeLeft}s</p>
+            <p><strong>Response Time Left:</strong> {responseTimeLeft}s</p>
             <p><strong>Round Start Time:</strong> {roundStartTime ? new Date(roundStartTime).toLocaleTimeString() : 'Not set'}</p>
             <p><strong>Timer Initialized:</strong> {timerInitialized ? 'Yes' : 'No'}</p>
             <p><strong>Is Player 1:</strong> {isPlayer1 ? "Yes" : "No"}</p>

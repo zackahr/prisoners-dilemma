@@ -6,7 +6,10 @@ from .game_logic import update_game_stats
 import random
 import json, asyncio, logging 
 logger = logging.getLogger(__name__)
-PROPOSER_TIMEOUT = 25
+
+# Separate timeout constants
+PROPOSER_TIMEOUT = 25  # 25 seconds for making offers
+RESPONSE_TIMEOUT = 10  # 10 seconds for responding to offers
 
 class UltimatumGameConsumer(AsyncWebsocketConsumer):
 
@@ -14,6 +17,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
         self.match_id = self.scope["url_route"]["kwargs"]["match_id"]
         self.player_fingerprint = None  
         self.offer_timeout_task = None
+        self.response_timeout_task = None  # NEW: Separate timeout for responses
         
         # Extract IP address from the connection
         self.client_ip = self.scope.get('client', ['unknown', None])[0]
@@ -50,7 +54,6 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({
                 "game_state": game_state
             }))
-            # await self.start_offer_timeout()
             logger.info(f"Player connected to match {self.match_id} from IP {self.client_ip}")
         except Exception as e:
             logger.error(f"Error sending initial game state: {e}")
@@ -58,9 +61,9 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 "error": "Failed to load game state"
             }))
     
-    # TIME-OUT HELPERS
+    # OFFER TIMEOUT HELPERS
     async def start_offer_timeout(self):
-        """(Re)start a 15-second timer for this socket instance."""
+        """(Re)start a 25-second timer for making offers."""
         await self.cancel_offer_timeout()
         self.offer_timeout_task = asyncio.create_task(self._offer_timeout_loop())
 
@@ -73,7 +76,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
         try:
             await asyncio.sleep(PROPOSER_TIMEOUT)
             current_round = await self.get_current_round()
-            if not current_round:                       # safety-net
+            if not current_round:
                 return
 
             # Decide whether *this* player still owes an offer
@@ -91,23 +94,72 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                  current_round.player_2_coins_to_offer is None)
             )
             if needs_offer:
-                await self.handle_player_timeout()
+                await self.handle_player_timeout("offer")
         except asyncio.CancelledError:
             pass    # normal path when player makes an offer
 
-    async def handle_player_timeout(self):
-        logging.warning("Player %s timed-out in match %s",
-                        self.player_fingerprint, self.match_id)
+    # NEW: RESPONSE TIMEOUT HELPERS
+    async def start_response_timeout(self):
+        """Start a 10-second timer for responding to offers."""
+        await self.cancel_response_timeout()
+        self.response_timeout_task = asyncio.create_task(self._response_timeout_loop())
+
+    async def cancel_response_timeout(self):
+        if self.response_timeout_task and not self.response_timeout_task.done():
+            self.response_timeout_task.cancel()
+        self.response_timeout_task = None
+
+    async def _response_timeout_loop(self):
+        try:
+            await asyncio.sleep(RESPONSE_TIMEOUT)
+            current_round = await self.get_current_round()
+            if not current_round:
+                return
+
+            # Decide whether *this* player still owes a response
+            first = await database_sync_to_async(
+                lambda: UltimatumGameRound.objects.get(
+                    game_match_uuid=self.match_id, round_number=1
+                )
+            )()
+
+            # Check if both offers are made and this player needs to respond
+            both_offers_made = (current_round.player_1_coins_to_offer is not None and 
+                              current_round.player_2_coins_to_offer is not None)
+            
+            if both_offers_made:
+                needs_response = (
+                    (self.player_fingerprint == first.player_1_fingerprint and 
+                     current_round.player_1_response_to_p2_offer is None)
+                    or
+                    (self.player_fingerprint == first.player_2_fingerprint and 
+                     current_round.player_2_response_to_p1_offer is None)
+                )
+                if needs_response:
+                    await self.handle_player_timeout("response")
+        except asyncio.CancelledError:
+            pass    # normal path when player responds
+
+    async def handle_player_timeout(self, timeout_type="offer"):
+        """Handle player timeout for either offer or response phase."""
+        logging.warning("Player %s timed-out (%s phase) in match %s",
+                        self.player_fingerprint, timeout_type, self.match_id)
 
         await self.channel_layer.group_send(self.room_group_name, {
             "type": "match_terminated",
             "reason": "timeout",
+            "timeout_type": timeout_type,
             "disconnected_player": self.player_fingerprint,
         })
         await self.close(code=4001)
+
     # --------------------------------------------------------------
     async def disconnect(self, code):
         logger.info(f"Player {getattr(self, 'player_fingerprint', 'unknown')} disconnecting from match {self.match_id} with code {code}")
+        
+        # Cancel both timers
+        await self.cancel_offer_timeout()
+        await self.cancel_response_timeout()
         
         if hasattr(self, "room_group_name"):
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
@@ -188,6 +240,8 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                     "type": "game_state_update",
                     "game_state": updated_game_state,
                 })
+                
+                # Start offer timeout for new rounds
                 await self.start_offer_timeout()
                 return
             except Exception as e:
@@ -222,7 +276,10 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 if not await self.process_offer(fp, offer_data):
                     await self.send(text_data=json.dumps({"error": "Cannot make offer"}))
                     return
+                
+                # Cancel offer timeout for this player
                 await self.cancel_offer_timeout()
+                
                 await self.channel_layer.group_send(self.room_group_name, {
                     "type": "game_action",
                     "player_fingerprint": fp,
@@ -233,6 +290,14 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
 
                 # Check if bot needs to make offer
                 await self.handle_bot_offer_if_needed()
+                
+                # NEW: Check if both offers are now made and start response timeout
+                current_round = await self.get_current_round()
+                if (current_round and 
+                    current_round.player_1_coins_to_offer is not None and 
+                    current_round.player_2_coins_to_offer is not None):
+                    logger.info(f"Both offers made in match {self.match_id}, starting response timeout")
+                    await self.start_response_timeout()
 
             except Exception as e:
                 logger.error(f"Error processing offer: {e}")
@@ -251,7 +316,10 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 if not await self.process_response(fp, target_player, response):
                     await self.send(text_data=json.dumps({"error": "Cannot respond to offer"}))
                     return
-                await self.cancel_offer_timeout()
+                
+                # Cancel response timeout for this player
+                await self.cancel_response_timeout()
+                
                 await self.channel_layer.group_send(self.room_group_name, {
                     "type": "game_action",
                     "player_fingerprint": fp,
@@ -266,6 +334,10 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                 # Check if round is complete
                 if await self.check_round_complete():
                     logger.info(f"Round complete in match {self.match_id}, calculating results...")
+                    
+                    # Cancel any remaining timeouts
+                    await self.cancel_offer_timeout()
+                    await self.cancel_response_timeout()
                     
                     await self.calculate_round_results()
                     gs = await self.get_game_state()
@@ -291,6 +363,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                                 "type": "game_state_update",
                                 "game_state": updated_gs,
                             })
+                            # Start offer timeout for new round
                             await self.start_offer_timeout()
 
             except Exception as e:
@@ -303,6 +376,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({
                 "match_terminated": True,
                 "reason": event["reason"],
+                "timeout_type": event.get("timeout_type", "unknown"),
                 "message": f"Match ended: {event['reason']}",
                 "disconnected_player": event.get("disconnected_player", "unknown")
             }))
@@ -312,7 +386,6 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
     async def force_disconnect(self, event):
         try:
             logger.info(f"Force disconnecting player from match {self.match_id}")
-            # await self.close(code=4001)
             await self.close(code=4001, reason=event.get("reason", "player_disconnected"))
         except Exception as e:
             logger.error(f"Error during force disconnect: {e}")
@@ -749,6 +822,15 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                         "coins_to_offer": coins_to_offer,
                     })
                     logger.info(f"Bot made offer: keep={coins_to_keep}, offer={coins_to_offer}")
+                    
+                    # Check if both offers are now made (human + bot)
+                    updated_round = await self.get_current_round()
+                    if (updated_round and 
+                        updated_round.player_1_coins_to_offer is not None and 
+                        updated_round.player_2_coins_to_offer is not None):
+                        logger.info(f"Both offers made (including bot) in match {self.match_id}, starting response timeout")
+                        await self.start_response_timeout()
+                        
         except Exception as e:
             logger.error(f"Error making bot offer: {e}")
 
@@ -766,7 +848,7 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
                     response = "accept" if current_round.player_1_coins_to_offer >= 30 else "reject"
                     
                     if await self.process_response("bot", "player_1", response):
-                        await self.cancel_offer_timeout()
+                        await self.cancel_response_timeout()
                         await self.channel_layer.group_send(self.room_group_name, {
                             "type": "game_action",
                             "player_fingerprint": "bot",
