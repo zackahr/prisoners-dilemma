@@ -720,11 +720,17 @@ class UltimatumGameConsumer(AsyncWebsocketConsumer):
             logger.error(f"Error calculating round results: {e}")
             return False
     async def round_results(self, event):
-        # plain pass-through to the browser
-        await self.send(text_data=json.dumps({
-            "round_results": event["summary"]
-        }))
-
+        """Handle round results broadcast"""
+        try:
+            # Add a small delay to ensure the client is ready
+            await asyncio.sleep(0.5)
+            
+            await self.send(text_data=json.dumps({
+                "round_results": event["summary"]
+            }))
+            logger.info(f"Sent round results for round {event['summary']['round_number']} to player {self.player_fingerprint}")
+        except Exception as e:
+            logger.error(f"Error sending round results: {e}")
     # @database_sync_to_async
     # def calculate_round_results(self):
     #     try:
