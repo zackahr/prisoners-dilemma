@@ -1,7 +1,13 @@
 // const API_BASE_URL = "http://localhost:8001/api/ultimatum"
 // const API_BASE_URL = `${window.location.protocol}//${window.location.host}/api/ultimatum`;
 const PORT          = 8001;                             // <-- change if you run Django on another port
-const API_BASE_URL  = `http://localhost:${PORT}/api/ultimatum`;
+// const API_BASE_URL  = `http://localhost:${PORT}/api/ultimatum`;
+
+// Use dynamic URL that works for both development and production
+const API_BASE_URL = window.location.hostname === 'localhost' 
+  ? `http://localhost:${PORT}/api/ultimatum`
+  : `${window.location.protocol}//${window.location.host}/api/ultimatum`;
+
 export const gameApi = {
   async createMatch(gameMode, playerFingerprint) {
     console.log("🎮 Creating match:", { gameMode, playerFingerprint })

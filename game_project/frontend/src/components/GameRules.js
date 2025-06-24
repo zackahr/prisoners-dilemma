@@ -4,6 +4,13 @@ import { Users, Bot, Coins, Play, Trophy, Target } from "lucide-react"
 import PayoffMatrix from "./PayoffMatrix"
 import "./GameRules.css"
 
+// Add this dynamic API URL configuration
+const PORT = 8001
+const API_BASE_URL =
+  window.location.hostname === "localhost"
+    ? `http://localhost:${PORT}/api/prisoners`
+    : `${window.location.protocol}//${window.location.host}/api/prisoners`
+
 function GameRules({ setMatchId, setPlayerFingerprint }) {
   const [gameMode, setGameMode] = useState("online")
   const [isLoading, setIsLoading] = useState(false)
@@ -29,8 +36,8 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
       const playerFingerprint = localStorage.getItem("playerUUID")
       console.log("Starting game with fingerprint:", playerFingerprint)
 
-      // Create a new game match
-      const response = await fetch("/api/prisoners/create_match/", {
+      // Update this line to use the dynamic API_BASE_URL
+      const response = await fetch(`${API_BASE_URL}/create_match/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

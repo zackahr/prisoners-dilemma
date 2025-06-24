@@ -51,9 +51,13 @@ function GameBoard({ playerFingerprint }) {
     setMyFingerprint(fingerprint)
     console.log("Connecting with fingerprint:", fingerprint)
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
-    const host = window.location.host
-    const socket = new WebSocket(`${protocol}//${host}/ws/game/${matchId}/`)
+    // Dynamic WebSocket URL
+    const isLocalhost = window.location.hostname === 'localhost';
+    const wsUrl = isLocalhost 
+      ? `ws://localhost:8001/ws/game/${matchId}/`  // Use backend port in development
+      : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws/game/${matchId}/`;
+    
+    const socket = new WebSocket(wsUrl)
     socketRef.current = socket
 
     socket.onopen = () => {

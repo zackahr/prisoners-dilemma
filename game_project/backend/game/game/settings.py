@@ -27,10 +27,29 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
-CORS_ALLOW_ALL_ORIGINS = True
-#CORS_ALLOW_ALL_ORIGINS=True
-#CORS_ALLOW_CREDENTIALS = True
+# Updated ALLOWED_HOSTS for production
+ALLOWED_HOSTS = [
+    'gametheory.socialinteractionlab.org',  # Your HTTPS domain
+    '213.165.81.57',                        # Your server IP
+    'localhost',                            # Local development
+    'backend',                              # Docker service name
+    'frontend',                             # Frontend service name
+    '0.0.0.0',                             # For Docker internal networking
+    '127.0.0.1'                            # Localhost
+]
+
+# CORS configuration for HTTPS
+CORS_ALLOWED_ORIGINS = [
+    "https://gametheory.socialinteractionlab.org",  # Your HTTPS domain
+    "http://localhost:3000",                        # Local development
+    "http://127.0.0.1:3000",                       # Local development
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+# For development only - remove in production
+CORS_ALLOW_ALL_ORIGINS = True  # Set to False for production security
+
 CORS_ALLOW_METHODS = [
     'DELETE',
     'GET',
@@ -39,6 +58,39 @@ CORS_ALLOW_METHODS = [
     'POST',
     'PUT',
 ]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# CSRF settings for HTTPS
+CSRF_TRUSTED_ORIGINS = [
+    "https://gametheory.socialinteractionlab.org",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+# Disable CSRF for API testing (temporary)
+CSRF_COOKIE_SECURE = False
+CSRF_USE_SESSIONS = False
+
+# Or better - exempt specific paths
+CSRF_EXEMPT_URLS = [
+    r'/api/ultimatum/.*',  # Exempt all ultimatum API endpoints
+]
+
+# Security settings for HTTPS
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = False  # Nginx handles the redirect
+USE_TZ = True
 
 INSTALLED_APPS = [
     'daphne',
@@ -56,13 +108,13 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # Move CORS to the top
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 

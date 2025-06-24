@@ -2,6 +2,7 @@ from django.urls import re_path
 from . import consumers
 
 websocket_urlpatterns = [
-    # re_path(r'ws/ultimatum-game/(?P<match_id>\w+)/$', consumers.UltimatumGameConsumer.as_asgi()),
-    re_path(r'^ws/ultimatum-game/(?P<match_id>[-\w]+)/$', consumers.UltimatumGameConsumer.as_asgi()),
+    # Match what Nginx is actually sending (without /ws/ prefix)
+    re_path(r'^ultimatum-game/(?P<match_id>[-\w]+)/$', consumers.UltimatumGameConsumer.as_asgi()),
 ]
+

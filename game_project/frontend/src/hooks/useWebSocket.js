@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react"
-const PORT        = 8001;                                // same number as above
-const WS_BASE_URL = `ws://localhost:${PORT}`;
+
+const PORT = 8001;
+
+// Dynamic WebSocket URL (similar to your gameApi.js)
+const WS_BASE_URL = window.location.hostname === 'localhost' 
+  ? `ws://localhost:${PORT}`
+  : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
+
 export const useWebSocket = (matchId, playerFingerprint) => {
   const [socket, setSocket] = useState(null)
   const [gameState, setGameState] = useState(null)

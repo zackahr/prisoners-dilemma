@@ -19,27 +19,27 @@ all: start-services run-migrations
 # Start the DB service
 start-db:
 	@echo "$(BLUE)Starting DB service...$(RESET)"
-	docker-compose up -d $(DB_SERVICE)
+	docker compose up -d $(DB_SERVICE)
 
 # Start the Redis service
 start-redis:
 	@echo "$(BLUE)Starting Redis service...$(RESET)"
-	docker-compose up -d $(REDIS_SERVICE)
+	docker compose up -d $(REDIS_SERVICE)
 
 # Start the Backend service
 start-backend:
 	@echo "$(BLUE)Starting Backend service...$(RESET)"
-	docker-compose up -d $(BACKEND_SERVICE)
+	docker compose up -d $(BACKEND_SERVICE)
 
 # Start the Frontend service
 start-frontend:
 	@echo "$(BLUE)Starting Frontend service...$(RESET)"
-	docker-compose up -d $(FRONTEND_SERVICE)
+	docker compose up -d $(FRONTEND_SERVICE)
 
 # Start all services together
 start-services: start-db start-redis start-backend start-frontend
 	@echo "$(BLUE)Building and starting all services...$(RESET)"
-	docker-compose up --build -d
+	docker compose up --build -d
 
 # Run the migrations script for the backend
 run-migrations:
@@ -49,7 +49,7 @@ run-migrations:
 # Clean up all containers
 clean:
 	@echo "$(RED)Cleaning up containers...$(RESET)"
-	docker-compose down
+	docker compose down
 
 # Clean up containers, volumes, and prune unused Docker resources
 fclean:
@@ -62,45 +62,27 @@ fclean:
 # Show status of all services
 status:
 	@echo "$(GREEN)Checking status of all services...$(RESET)"
-	docker-compose ps
+	docker compose ps
 
 # Follow logs for all services
 logs:
 	@echo "$(BLUE)Following logs of all services...$(RESET)"
-	docker-compose logs -ff
+	docker compose logs -ff
 
 # Rebuild and start all services
 re: fclean all
 	@echo "$(GREEN)Rebuilding and restarting all services...$(RESET)"
-	docker-compose up --build -d
+	docker compose up --build -d
 
 # Stop all running services
 stop:
 	@echo "$(RED)Stopping all services...$(RESET)"
-	docker-compose stop
+	docker compose stop
 
 # Remove unused Docker volumes and images
 docker-prune:
 	@echo "$(YELLOW)Pruning unused Docker volumes and images...$(RESET)"
-	docker-compose down --volumes --remove-orphans 
+	docker compose down --volumes --remove-orphans 
 	docker volume prune -f
 	docker image prune -f
 	docker system prune -f
-
-
-
-
-
-
-#docker-compose down
-
-#docker system prune -a -f
-#ocker volume prune -f
-
-# 3. Update your package.json with the version above
-
-# 4. Build with no cache
-#docker-compose build --no-cache
-
-# 5. Start services
-#docker-compose up -d
