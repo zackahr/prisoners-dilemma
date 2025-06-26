@@ -44,7 +44,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             if deleted:
                 await self.channel_layer.group_send(self.room_group_name, {
                     "type": "game_aborted",
-                    "msg": "Match was incomplete and has been deleted."
+                    "msg": "Match was incomplete and has been deleted.",
+                    "redirect_to": "/prisoners"
                 })
                 logger.info("Incomplete match %s deleted.", match_id)
 
@@ -52,7 +53,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             "game_aborted": True,
             "message": event["msg"],
-            "redirect_to": event.get("redirect_to", "/")  # Default to home page
+            "redirect_to": event.get("redirect_to", "/prisoners")  # Default to prisoners page
         }))
 
     # ──────────────────────── receive ───────────────────────────
@@ -89,8 +90,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             # Mark match as complete/abandoned and notify all players
             await self.channel_layer.group_send(self.room_group_name, {
                 "type": "game_aborted",
-                "msg": "Match ended due to player inactivity. You will be redirected to the home page.",
-                "redirect_to": "/"  # Redirect to home page
+                "msg": "Match ended due to player inactivity. You will be redirected to the game lobby.",
+                "redirect_to": "/prisoners"  # Redirect to prisoners page
             })
             
             # Delete the match

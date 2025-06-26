@@ -39,12 +39,12 @@ function GameBoard({ playerFingerprint }) {
   // Connect to WebSocket
   useEffect(() => {
     if (!matchId) {
-      navigate("/")
+      navigate("/prisoners")
       return
     }
     const fingerprint = playerFingerprint || localStorage.getItem("playerUUID")
     if (!fingerprint) {
-      navigate("/")
+      navigate("/prisoners")
       return
     }
 
@@ -82,7 +82,7 @@ function GameBoard({ playerFingerprint }) {
           open: true,
           title: "Match Ended",
           msg: data.message,
-          redirectTo: data.redirect_to || "/"  // Use redirect_to from server, default to home
+          redirectTo: data.redirect_to || "/prisoners"  // Use redirect_to from server, default to prisoners
         })
         return
       }
@@ -248,9 +248,9 @@ function GameBoard({ playerFingerprint }) {
 
   // Handle modal close with redirection
   const handleModalClose = () => {
-    setModal({ open: false, title: "", msg: "", redirectTo: "/" })
-    // Navigate to the specified redirect path (home page by default)
-    navigate(modal.redirectTo || "/")
+    setModal({ open: false, title: "", msg: "", redirectTo: "/prisoners" })
+    // Navigate to the specified redirect path (prisoners page by default)
+    navigate(modal.redirectTo || "/prisoners")
   }
 
   if (!connected) {
