@@ -32,19 +32,19 @@ function GameBoard({ playerFingerprint }) {
   const [waitingForMyAction, setWaitingForMyAction] = useState(false)
   const [myFingerprint, setMyFingerprint] = useState("")
   const socketRef = useRef(null)
-  const [modal, setModal] = useState({ open: false, title: "", msg: "" })
+  const [modal, setModal] = useState({ open: false, title: "", msg: "", redirectTo: "/prisoners" })
   const [roundPhase, setRoundPhase] = useState("choosing") // 'choosing' or 'results'
   const [lastRoundResult, setLastRoundResult] = useState(null)
 
   // Connect to WebSocket
   useEffect(() => {
     if (!matchId) {
-      navigate("/prisoners")
+      navigate("/")
       return
     }
     const fingerprint = playerFingerprint || localStorage.getItem("playerUUID")
     if (!fingerprint) {
-      navigate("/prisoners")
+      navigate("/")
       return
     }
 
@@ -75,14 +75,18 @@ function GameBoard({ playerFingerprint }) {
         console.log("Game state update:", data.game_state)
         updateGameState(data.game_state, fingerprint)
       }
+      
       if (data.game_aborted) {
+        console.log("Game aborted:", data)
         setModal({
           open: true,
           title: "Match Ended",
           msg: data.message,
+          redirectTo: data.redirect_to || "/"  // Use redirect_to from server, default to home
         })
         return
       }
+      
       if (data.player_fingerprint && data.action) {
         console.log(`Player ${data.player_fingerprint} performed action: ${data.action}`)
         handlePlayerAction(data.player_fingerprint, data.action, fingerprint)
@@ -90,7 +94,6 @@ function GameBoard({ playerFingerprint }) {
 
       if (data.game_over) {
         console.log("Game over received:", data)
-        console.log("data", data);
         setGameState((prevState) => ({
           ...prevState,
           gameOver: true,
@@ -225,7 +228,7 @@ function GameBoard({ playerFingerprint }) {
     }
   }
 
-  // Handle timeout - send abandon message instead of auto-defect
+  // Handle timeout - send timeout message to server
   const handleTimeout = () => {
     if (!waitingForMyAction || !connected) {
       return
@@ -241,6 +244,13 @@ function GameBoard({ playerFingerprint }) {
         }),
       )
     }
+  }
+
+  // Handle modal close with redirection
+  const handleModalClose = () => {
+    setModal({ open: false, title: "", msg: "", redirectTo: "/" })
+    // Navigate to the specified redirect path (home page by default)
+    navigate(modal.redirectTo || "/")
   }
 
   if (!connected) {
@@ -421,7 +431,7 @@ function GameBoard({ playerFingerprint }) {
                   timeLeft={timeLeft}
                   setTimeLeft={setTimeLeft}
                   canMakeChoice={canMakeChoice && waitingForMyAction}
-                  onTimeUp={handleTimeout} // Changed: now calls handleTimeout instead of auto-defect
+                  onTimeUp={handleTimeout} // Calls handleTimeout when timer expires
                 />
               </div>
             ) : (
@@ -527,10 +537,7 @@ function GameBoard({ playerFingerprint }) {
         open={modal.open}
         title={modal.title}
         message={modal.msg}
-        onClose={() => {
-          setModal({ open: false })
-          navigate("/prisoners")
-        }}
+        onClose={handleModalClose} // Updated to use handleModalClose
       />
     </div>
   )

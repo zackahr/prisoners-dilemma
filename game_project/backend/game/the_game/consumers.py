@@ -37,20 +37,22 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_discard(self.room_group_name,
                                                    self.channel_name)
 
-        # abort unfinished matches
-        if self.game_match and not self.game_match.is_complete:
+        # Delete incomplete matches on disconnect
+        if self.game_match:
             match_id = self.match_id
-            await self.channel_layer.group_send(self.room_group_name, {
-                "type": "game_aborted",
-                "msg": "Opponent disconnected – match aborted."
-            })
-            await database_sync_to_async(self.game_match.delete)()
-            logger.info("Aborted match %s deleted.", match_id)
+            deleted = await self.delete_incomplete_match()
+            if deleted:
+                await self.channel_layer.group_send(self.room_group_name, {
+                    "type": "game_aborted",
+                    "msg": "Match was incomplete and has been deleted."
+                })
+                logger.info("Incomplete match %s deleted.", match_id)
 
     async def game_aborted(self, event):
         await self.send(text_data=json.dumps({
             "game_aborted": True,
             "message": event["msg"],
+            "redirect_to": event.get("redirect_to", "/")  # Default to home page
         }))
 
     # ──────────────────────── receive ───────────────────────────
@@ -84,12 +86,14 @@ class GameConsumer(AsyncWebsocketConsumer):
         if action == "timeout" or action == "abandon":
             logger.info("Player %s abandoned match %s due to timeout", fp, self.match_id)
             
-            # Delete the match and notify all players
+            # Mark match as complete/abandoned and notify all players
             await self.channel_layer.group_send(self.room_group_name, {
                 "type": "game_aborted",
-                "msg": "Match ended due to player timeout/inactivity."
+                "msg": "Match ended due to player inactivity. You will be redirected to the home page.",
+                "redirect_to": "/"  # Redirect to home page
             })
             
+            # Delete the match
             if self.game_match:
                 await database_sync_to_async(self.game_match.delete)()
                 logger.info("Match %s deleted due to timeout", self.match_id)
@@ -106,7 +110,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                     {"error": "You are not a registered player."}))
                 return
 
-            if not await self.process_action(fp, action):
+            if not await self.process_action(fp, action): 
                 return
 
             await self.channel_layer.group_send(self.room_group_name, {
@@ -169,6 +173,13 @@ class GameConsumer(AsyncWebsocketConsumer):
             return None
 
     @database_sync_to_async
+    def delete_incomplete_match(self):
+        """Delete the match if it's incomplete"""
+        if self.game_match:
+            return self.game_match.delete_if_incomplete()
+        return False
+
+    @database_sync_to_async
     def handle_join(self, fp):
         if self.game_match.is_complete:
             return False
@@ -216,7 +227,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         rnd, _ = GameRound.objects.get_or_create(
             match=self.game_match,
             round_number=rnd_no,
-            defaults={"round_start_time": timezone.now()},
+            defaults={"round_start_time": timezone.now().strftime('%Y-%m-%d %H:%M')},
         )
 
         wrote = False
@@ -243,7 +254,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         r = self.game_match.rounds.order_by("-round_number").first()
         p1, p2 = calculate_payoff(r.player_1_action, r.player_2_action)
         r.player_1_score, r.player_2_score = p1, p2
-        r.round_end_time = timezone.now()
+        r.round_end_time = timezone.now().strftime('%Y-%m-%d %H:%M')
         r.save()
         update_game_stats(self.game_match.match_id)
         # 👇 NEW – open empty record for the coming round
@@ -305,7 +316,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         self.game_match.player_1_final_score = gs["player1Score"]
         self.game_match.player_2_final_score = gs["player2Score"]
         self.game_match.is_complete = True
-        self.game_match.completed_at = timezone.now()
+        self.game_match.completed_at = timezone.now().strftime('%Y-%m-%d %H:%M')
         self.game_match.save()
 
     # ────────────────────── bot helper ──────────────────────────
