@@ -32,7 +32,7 @@ function GameBoard({ playerFingerprint }) {
   const [waitingForMyAction, setWaitingForMyAction] = useState(false)
   const [myFingerprint, setMyFingerprint] = useState("")
   const socketRef = useRef(null)
-  const [modal, setModal] = useState({ open: false, title: "", msg: "" })
+  const [modal, setModal] = useState({ open: false, title: "", msg: "", redirectTo: "/prisoners" })
   const [roundPhase, setRoundPhase] = useState("choosing") // 'choosing' or 'results'
   const [lastRoundResult, setLastRoundResult] = useState(null)
 
@@ -75,14 +75,18 @@ function GameBoard({ playerFingerprint }) {
         console.log("Game state update:", data.game_state)
         updateGameState(data.game_state, fingerprint)
       }
+      
       if (data.game_aborted) {
+        console.log("Game aborted:", data)
         setModal({
           open: true,
-          title: "Match aborted",
+          title: "Match Ended",
           msg: data.message,
+          redirectTo: data.redirect_to || "/prisoners"  // Use redirect_to from server, default to prisoners
         })
         return
       }
+      
       if (data.player_fingerprint && data.action) {
         console.log(`Player ${data.player_fingerprint} performed action: ${data.action}`)
         handlePlayerAction(data.player_fingerprint, data.action, fingerprint)
@@ -90,7 +94,6 @@ function GameBoard({ playerFingerprint }) {
 
       if (data.game_over) {
         console.log("Game over received:", data)
-        console.log("data", data);
         setGameState((prevState) => ({
           ...prevState,
           gameOver: true,
@@ -225,6 +228,31 @@ function GameBoard({ playerFingerprint }) {
     }
   }
 
+  // Handle timeout - send timeout message to server
+  const handleTimeout = () => {
+    if (!waitingForMyAction || !connected) {
+      return
+    }
+
+    console.log("Timeout reached - abandoning match")
+    
+    if (socketRef.current) {
+      socketRef.current.send(
+        JSON.stringify({
+          action: "timeout",
+          player_fingerprint: myFingerprint,
+        }),
+      )
+    }
+  }
+
+  // Handle modal close with redirection
+  const handleModalClose = () => {
+    setModal({ open: false, title: "", msg: "", redirectTo: "/prisoners" })
+    // Navigate to the specified redirect path (prisoners page by default)
+    navigate(modal.redirectTo || "/prisoners")
+  }
+
   if (!connected) {
     return (
       <div className="game-page">
@@ -341,9 +369,9 @@ function GameBoard({ playerFingerprint }) {
               </button>
             </div>
 
-            {/* <RoundHistory history={gameState.roundHistory} isPlayer1={isPlayer1} /> */}
-            {/* <PayoffsTable history={gameState.roundHistory} /> */}
-            {/* <PayoffsTable /> */}
+            <div className="round-history-section">
+              <PayoffsTable history={gameState.roundHistory} />
+            </div>
           </div>
         </div>
       </div>
@@ -403,7 +431,7 @@ function GameBoard({ playerFingerprint }) {
                   timeLeft={timeLeft}
                   setTimeLeft={setTimeLeft}
                   canMakeChoice={canMakeChoice && waitingForMyAction}
-                  onTimeUp={() => waitingForMyAction && makeChoice("Defect")}
+                  onTimeUp={handleTimeout} // Calls handleTimeout when timer expires
                 />
               </div>
             ) : (
@@ -501,7 +529,6 @@ function GameBoard({ playerFingerprint }) {
         </div>
 
         <div className="round-history-section">
-          {/* <RoundHistory history={gameState.roundHistory} isPlayer1={isPlayer1} /> */}
           <PayoffsTable history={gameState.roundHistory} />
         </div>
       </div>
@@ -510,10 +537,7 @@ function GameBoard({ playerFingerprint }) {
         open={modal.open}
         title={modal.title}
         message={modal.msg}
-        onClose={() => {
-          setModal({ open: false })
-          navigate("/prisoners")
-        }}
+        onClose={handleModalClose} // Updated to use handleModalClose
       />
     </div>
   )
