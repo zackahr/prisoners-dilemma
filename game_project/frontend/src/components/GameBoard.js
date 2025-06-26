@@ -78,7 +78,7 @@ function GameBoard({ playerFingerprint }) {
       if (data.game_aborted) {
         setModal({
           open: true,
-          title: "Match aborted",
+          title: "Match Ended",
           msg: data.message,
         })
         return
@@ -225,6 +225,24 @@ function GameBoard({ playerFingerprint }) {
     }
   }
 
+  // Handle timeout - send abandon message instead of auto-defect
+  const handleTimeout = () => {
+    if (!waitingForMyAction || !connected) {
+      return
+    }
+
+    console.log("Timeout reached - abandoning match")
+    
+    if (socketRef.current) {
+      socketRef.current.send(
+        JSON.stringify({
+          action: "timeout",
+          player_fingerprint: myFingerprint,
+        }),
+      )
+    }
+  }
+
   if (!connected) {
     return (
       <div className="game-page">
@@ -341,9 +359,9 @@ function GameBoard({ playerFingerprint }) {
               </button>
             </div>
 
-            {/* <RoundHistory history={gameState.roundHistory} isPlayer1={isPlayer1} /> */}
-            {/* <PayoffsTable history={gameState.roundHistory} /> */}
-            {/* <PayoffsTable /> */}
+            <div className="round-history-section">
+              <PayoffsTable history={gameState.roundHistory} />
+            </div>
           </div>
         </div>
       </div>
@@ -403,7 +421,7 @@ function GameBoard({ playerFingerprint }) {
                   timeLeft={timeLeft}
                   setTimeLeft={setTimeLeft}
                   canMakeChoice={canMakeChoice && waitingForMyAction}
-                  onTimeUp={() => waitingForMyAction && makeChoice("Defect")}
+                  onTimeUp={handleTimeout} // Changed: now calls handleTimeout instead of auto-defect
                 />
               </div>
             ) : (
@@ -501,7 +519,6 @@ function GameBoard({ playerFingerprint }) {
         </div>
 
         <div className="round-history-section">
-          {/* <RoundHistory history={gameState.roundHistory} isPlayer1={isPlayer1} /> */}
           <PayoffsTable history={gameState.roundHistory} />
         </div>
       </div>
