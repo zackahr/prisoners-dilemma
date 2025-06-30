@@ -1,5 +1,7 @@
 # Python cache files
 __pycache__/
+*/__pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -26,6 +28,12 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
+# Django migrations
+*/migrations/__pycache__/
+*/migrations/*.pyc
+**/migrations/__pycache__/
+**/migrations/*.pyc
+
 # Environment variables
 .env
 .venv
@@ -51,3 +59,6 @@ yarn-error.log*
 *.swp
 *.swo
 *~
+
+# Remove specific pycache file (now covered by patterns above)
+# game_project/backend/game/game/__pycache__/settings.cpython-310.pyc
