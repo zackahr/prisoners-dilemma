@@ -18,113 +18,6 @@ import { useWebSocket } from "../hooks/useWebSocket"
 import { gameApi, getPlayerFingerprint } from "../services/gameApi"
 import "./GamePage.css"
 
-// Round Results Popup Modal Component
-// function RoundResultsModal({ data, isP1, isOpen, onClose }) {
-//   const [countdown, setCountdown] = useState(5);
-
-//   useEffect(() => {
-//     if (!isOpen) return;
-
-//     setCountdown(5);
-    
-//     const timer = setInterval(() => {
-//       setCountdown(prev => {
-//         if (prev <= 1) {
-//           clearInterval(timer);
-//           onClose();
-//           return 0;
-//         }
-//         return prev - 1;
-//       });
-//     }, 1000);
-
-//     return () => clearInterval(timer);
-//   }, [isOpen, onClose]);
-
-//   if (!isOpen || !data) return null;
-
-//   return (
-//     <div className="modal-overlay">
-//       <div className="modal-container round-results-modal">
-//         <div className="modal-header">
-//           <div className="modal-icon">
-//             <Trophy className="trophy-icon" />
-//           </div>
-//           <h2 className="modal-title">Round {data.round_number} Results</h2>
-//           <button 
-//             className="modal-close-btn"
-//             onClick={onClose}
-//             aria-label="Close"
-//           >
-//             <X size={20} />
-//           </button>
-//         </div>
-
-//         <div className="modal-content">
-//           <div className="results-grid">
-//             <div className="player-section">
-//               <h3 className="player-title">Player 1</h3>
-//               <div className="result-item">
-//                 <span className="result-label">Kept:</span>
-//                 <span className="result-value">${100 - data.p1_offer}</span>
-//               </div>
-//               <div className="result-item">
-//                 <span className="result-label">Offered:</span>
-//                 <span className="result-value">${data.p1_offer}</span>
-//               </div>
-//               <div className="result-item">
-//                 <span className="result-label">Response:</span>
-//                 <span className={`result-value response ${data.p2_response}`}>
-//                   {data.p2_response}
-//                 </span>
-//               </div>
-//             </div>
-
-//             <div className="player-section">
-//               <h3 className="player-title">Player 2</h3>
-//               <div className="result-item">
-//                 <span className="result-label">Kept:</span>
-//                 <span className="result-value">${100 - data.p2_offer}</span>
-//               </div>
-//               <div className="result-item">
-//                 <span className="result-label">Offered:</span>
-//                 <span className="result-value">${data.p2_offer}</span>
-//               </div>
-//               <div className="result-item">
-//                 <span className="result-label">Response:</span>
-//                 <span className={`result-value response ${data.p1_response}`}>
-//                   {data.p1_response}
-//                 </span>
-//               </div>
-//             </div>
-//           </div>
-
-//           <div className="earnings-section">
-//             <div className="your-earnings">
-//               <span className="earnings-label">You earned this round:</span>
-//               <span className="earnings-amount">
-//                 ${isP1 ? data.p1_earned : data.p2_earned}
-//               </span>
-//             </div>
-//           </div>
-//         </div>
-
-//         <div className="modal-footer">
-//           <div className="auto-close-info">
-//             <p>Next round starts automatically in <strong>{countdown}</strong> seconds</p>
-//           </div>
-//           <button 
-//             className="continue-btn"
-//             onClick={onClose}
-//           >
-//             Continue Now
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-// Round Results Popup Modal Component
 function RoundResultsModal({ data, isP1, isOpen, onClose }) {
   const [countdown, setCountdown] = useState(5);
 
@@ -622,19 +515,19 @@ export default function GamePage() {
             <h2>Connection Error</h2>
             <p>{error}</p>
             <div className="debug-info">
-              <p><strong>Your fingerprint:</strong> {playerFingerprint}</p>
-              <p><strong>Match ID:</strong> {matchId}</p>
+              {/* <p><strong>Your fingerprint:</strong> {playerFingerprint}</p> */}
+              {/* <p><strong>Match ID:</strong> {matchId}</p> */}
               {gameState && (
                 <>
-                  <p><strong>Player 1:</strong> {gameState.player1Fingerprint}</p>
-                  <p><strong>Player 2:</strong> {gameState.player2Fingerprint}</p>
-                  <p><strong>Game Mode:</strong> {gameState.gameMode}</p>
-                  <p><strong>Current Round:</strong> {gameState.currentRound}</p>
-                  <p><strong>Waiting for Opponent:</strong> {gameState.waitingForOpponent ? "Yes" : "No"}</p>
+                  {/* <p><strong>Player 1:</strong> {gameState.player1Fingerprint}</p> */}
+                  {/* <p><strong>Player 2:</strong> {gameState.player2Fingerprint}</p> */}
+                  {/* <p><strong>Game Mode:</strong> {gameState.gameMode}</p> */}
+                  {/* <p><strong>Current Round:</strong> {gameState.currentRound}</p> */}
+                  {/* <p><strong>Waiting for Opponent:</strong> {gameState.waitingForOpponent ? "Yes" : "No"}</p> */}
                   {gameState.currentRoundState && (
                     <>
-                      <p><strong>P1 Offer Made:</strong> {gameState.currentRoundState.player1OfferMade ? "Yes" : "No"}</p>
-                      <p><strong>P2 Offer Made:</strong> {gameState.currentRoundState.player2OfferMade ? "Yes" : "No"}</p>
+                      {/* <p><strong>P1 Offer Made:</strong> {gameState.currentRoundState.player1OfferMade ? "Yes" : "No"}</p> */}
+                      {/* <p><strong>P2 Offer Made:</strong> {gameState.currentRoundState.player2OfferMade ? "Yes" : "No"}</p> */}
                     </>
                   )}
                 </>

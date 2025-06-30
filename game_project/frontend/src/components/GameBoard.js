@@ -32,6 +32,7 @@ function GameBoard({ playerFingerprint }) {
   const [waitingForMyAction, setWaitingForMyAction] = useState(false)
   const [myFingerprint, setMyFingerprint] = useState("")
   const socketRef = useRef(null)
+  const timedOutRef = useRef(false)
   const [modal, setModal] = useState({ open: false, title: "", msg: "", redirectTo: "/prisoners" })
   const [roundPhase, setRoundPhase] = useState("choosing") // 'choosing' or 'results'
   const [lastRoundResult, setLastRoundResult] = useState(null)
@@ -113,7 +114,11 @@ function GameBoard({ playerFingerprint }) {
 
     socket.onclose = () => {
       console.log("WebSocket disconnected")
-      setConnected(false)
+      // setConnected(false)
+            // Only show the “connecting” screen for *unexpected* drops
+      if (!timedOutRef.current) {
+        setConnected(false)
+      }
     }
 
     socket.onerror = (error) => {
@@ -234,16 +239,37 @@ function GameBoard({ playerFingerprint }) {
       return
     }
 
-    console.log("Timeout reached - abandoning match")
+    // console.log("Timeout reached - abandoning match")
     
-    if (socketRef.current) {
-      socketRef.current.send(
-        JSON.stringify({
-          action: "timeout",
-          player_fingerprint: myFingerprint,
-        }),
-      )
-    }
+    // if (socketRef.current) {
+    //   socketRef.current.send(
+    //     JSON.stringify({
+    //       action: "timeout",
+    //       player_fingerprint: myFingerprint,
+    //     }),
+    //   )
+    // }
+        console.log("⏱️ 10 s exceeded – aborting match")
+
+    // 1️⃣ show the modal immediately (don’t wait for the server)
+    timedOutRef.current = true
+    setModal({
+      open: true,
+      title: "Time’s up!",
+      msg: "You didn’t choose within 10 s. Returning to the lobby…",
+      redirectTo: "/prisoners",
+    })
+
+    // 2️⃣ tell the server (best-effort)
+    socketRef.current?.send(
+      JSON.stringify({
+        action: "timeout",
+        player_fingerprint: myFingerprint,
+      }),
+    )
+
+    // 3️⃣ close the socket yourself so onclose fires instantly
+    socketRef.current?.close()
   }
 
   // Handle modal close with redirection
@@ -253,20 +279,47 @@ function GameBoard({ playerFingerprint }) {
     navigate(modal.redirectTo || "/prisoners")
   }
 
+  // if (!connected) {
+  //   return (
+  //     <div className="game-page">
+  //       <div className="connecting-screen">
+  //         <div className="connecting-animation">
+  //           <div className="connecting-spinner"></div>
+  //           <h2 className="connecting-title">Connecting to Game Server</h2>
+  //           <p className="connecting-text">Establishing secure connection...</p>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   )
+  // }
+  // 👉 1. Modal always overrides everything else
+  if (modal.open) {
+    return (
+      <div className="game-page">
+        <Modal
+          open={modal.open}
+          title={modal.title}
+          message={modal.msg}
+          onClose={handleModalClose}
+        />
+      </div>
+    );
+  }
+
+  // 👉 2. Only show “connecting” when no modal is displayed
   if (!connected) {
     return (
       <div className="game-page">
-        <div className="connecting-screen">
-          <div className="connecting-animation">
-            <div className="connecting-spinner"></div>
-            <h2 className="connecting-title">Connecting to Game Server</h2>
-            <p className="connecting-text">Establishing secure connection...</p>
-          </div>
-        </div>
+           <div className="connecting-screen">
+           <div className="connecting-animation">
+             <div className="connecting-spinner"></div>
+             <h2 className="connecting-title">Connecting to Game Server</h2>
+             <p className="connecting-text">Establishing secure connection...</p>
+           </div>
+         </div>
       </div>
-    )
+    );
   }
-
   if (gameState.waitingForOpponent) {
     return (
       <div className="game-page">
