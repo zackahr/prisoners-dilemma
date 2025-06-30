@@ -1,0 +1,52 @@
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+*/migrations/
+
+#venv/
+#.env/
+#*.env
+
+
+
+
+# Logs
+*.log
+
+
+
+*.pid
+
+docker-compose.override.yml
+
+
+frontend/node_modules/
+
+frontend/build/
+frontend/dist/
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+
+frontend/src/tailwind.output.css
+
+# Logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# Editor files
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+*.csv
+
+
+
+
+backend/assets/__pycache__/
