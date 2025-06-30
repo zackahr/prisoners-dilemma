@@ -44,7 +44,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             if deleted:
                 await self.channel_layer.group_send(self.room_group_name, {
                     "type": "game_aborted",
-                    "msg": "Match was incomplete and has been deleted."
+                    "msg": "Match was incomplete and has been deleted.",
+                    "redirect_to": "/prisoners"
                 })
                 logger.info("Incomplete match %s deleted.", match_id)
 
@@ -52,6 +53,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             "game_aborted": True,
             "message": event["msg"],
+            "redirect_to": event.get("redirect_to", "/prisoners")  # Default to prisoners page
         }))
 
     # ──────────────────────── receive ───────────────────────────
@@ -79,6 +81,23 @@ class GameConsumer(AsyncWebsocketConsumer):
                 "type": "game_state_update",
                 "game_state": await self.get_game_state(),
             })
+            return
+
+        # ─────── timeout/abandon ───────
+        if action == "timeout" or action == "abandon":
+            logger.info("Player %s abandoned match %s due to timeout", fp, self.match_id)
+            
+            # Mark match as complete/abandoned and notify all players
+            await self.channel_layer.group_send(self.room_group_name, {
+                "type": "game_aborted",
+                "msg": "Match ended due to player inactivity. You will be redirected to the game lobby.",
+                "redirect_to": "/prisoners"  # Redirect to prisoners page
+            })
+            
+            # Delete the match
+            if self.game_match:
+                await database_sync_to_async(self.game_match.delete)()
+                logger.info("Match %s deleted due to timeout", self.match_id)
             return
 
         # ─── cooperate / defect ───

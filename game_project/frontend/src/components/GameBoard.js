@@ -32,7 +32,8 @@ function GameBoard({ playerFingerprint }) {
   const [waitingForMyAction, setWaitingForMyAction] = useState(false)
   const [myFingerprint, setMyFingerprint] = useState("")
   const socketRef = useRef(null)
-  const [modal, setModal] = useState({ open: false, title: "", msg: "" })
+  const timedOutRef = useRef(false)
+  const [modal, setModal] = useState({ open: false, title: "", msg: "", redirectTo: "/prisoners" })
   const [roundPhase, setRoundPhase] = useState("choosing") // 'choosing' or 'results'
   const [lastRoundResult, setLastRoundResult] = useState(null)
 
@@ -79,14 +80,18 @@ function GameBoard({ playerFingerprint }) {
         console.log("Game state update:", data.game_state)
         updateGameState(data.game_state, fingerprint)
       }
+      
       if (data.game_aborted) {
+        console.log("Game aborted:", data)
         setModal({
           open: true,
-          title: "Match aborted",
+          title: "Match Ended",
           msg: data.message,
+          redirectTo: data.redirect_to || "/prisoners"  // Use redirect_to from server, default to prisoners
         })
         return
       }
+      
       if (data.player_fingerprint && data.action) {
         console.log(`Player ${data.player_fingerprint} performed action: ${data.action}`)
         handlePlayerAction(data.player_fingerprint, data.action, fingerprint)
@@ -94,7 +99,6 @@ function GameBoard({ playerFingerprint }) {
 
       if (data.game_over) {
         console.log("Game over received:", data)
-        console.log("data", data);
         setGameState((prevState) => ({
           ...prevState,
           gameOver: true,
@@ -114,7 +118,11 @@ function GameBoard({ playerFingerprint }) {
 
     socket.onclose = () => {
       console.log("WebSocket disconnected")
-      setConnected(false)
+      // setConnected(false)
+            // Only show the “connecting” screen for *unexpected* drops
+      if (!timedOutRef.current) {
+        setConnected(false)
+      }
     }
 
     socket.onerror = (error) => {
@@ -229,20 +237,93 @@ function GameBoard({ playerFingerprint }) {
     }
   }
 
+  // Handle timeout - send timeout message to server
+  const handleTimeout = () => {
+    if (!waitingForMyAction || !connected) {
+      return
+    }
+
+    // console.log("Timeout reached - abandoning match")
+    
+    // if (socketRef.current) {
+    //   socketRef.current.send(
+    //     JSON.stringify({
+    //       action: "timeout",
+    //       player_fingerprint: myFingerprint,
+    //     }),
+    //   )
+    // }
+        console.log("⏱️ 10 s exceeded – aborting match")
+
+    // 1️⃣ show the modal immediately (don’t wait for the server)
+    timedOutRef.current = true
+    setModal({
+      open: true,
+      title: "Time’s up!",
+      msg: "You didn’t choose within 10 s. Returning to the lobby…",
+      redirectTo: "/prisoners",
+    })
+
+    // 2️⃣ tell the server (best-effort)
+    socketRef.current?.send(
+      JSON.stringify({
+        action: "timeout",
+        player_fingerprint: myFingerprint,
+      }),
+    )
+
+    // 3️⃣ close the socket yourself so onclose fires instantly
+    socketRef.current?.close()
+  }
+
+  // Handle modal close with redirection
+  const handleModalClose = () => {
+    setModal({ open: false, title: "", msg: "", redirectTo: "/prisoners" })
+    // Navigate to the specified redirect path (prisoners page by default)
+    navigate(modal.redirectTo || "/prisoners")
+  }
+
+  // if (!connected) {
+  //   return (
+  //     <div className="game-page">
+  //       <div className="connecting-screen">
+  //         <div className="connecting-animation">
+  //           <div className="connecting-spinner"></div>
+  //           <h2 className="connecting-title">Connecting to Game Server</h2>
+  //           <p className="connecting-text">Establishing secure connection...</p>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   )
+  // }
+  // 👉 1. Modal always overrides everything else
+  if (modal.open) {
+    return (
+      <div className="game-page">
+        <Modal
+          open={modal.open}
+          title={modal.title}
+          message={modal.msg}
+          onClose={handleModalClose}
+        />
+      </div>
+    );
+  }
+
+  // 👉 2. Only show “connecting” when no modal is displayed
   if (!connected) {
     return (
       <div className="game-page">
-        <div className="connecting-screen">
-          <div className="connecting-animation">
-            <div className="connecting-spinner"></div>
-            <h2 className="connecting-title">Connecting to Game Server</h2>
-            <p className="connecting-text">Establishing secure connection...</p>
-          </div>
-        </div>
+           <div className="connecting-screen">
+           <div className="connecting-animation">
+             <div className="connecting-spinner"></div>
+             <h2 className="connecting-title">Connecting to Game Server</h2>
+             <p className="connecting-text">Establishing secure connection...</p>
+           </div>
+         </div>
       </div>
-    )
+    );
   }
-
   if (gameState.waitingForOpponent) {
     return (
       <div className="game-page">
@@ -345,9 +426,9 @@ function GameBoard({ playerFingerprint }) {
               </button>
             </div>
 
-            {/* <RoundHistory history={gameState.roundHistory} isPlayer1={isPlayer1} /> */}
-            {/* <PayoffsTable history={gameState.roundHistory} /> */}
-            {/* <PayoffsTable /> */}
+            <div className="round-history-section">
+              <PayoffsTable history={gameState.roundHistory} />
+            </div>
           </div>
         </div>
       </div>
@@ -407,7 +488,7 @@ function GameBoard({ playerFingerprint }) {
                   timeLeft={timeLeft}
                   setTimeLeft={setTimeLeft}
                   canMakeChoice={canMakeChoice && waitingForMyAction}
-                  onTimeUp={() => waitingForMyAction && makeChoice("Defect")}
+                  onTimeUp={handleTimeout} // Calls handleTimeout when timer expires
                 />
               </div>
             ) : (
@@ -505,7 +586,6 @@ function GameBoard({ playerFingerprint }) {
         </div>
 
         <div className="round-history-section">
-          {/* <RoundHistory history={gameState.roundHistory} isPlayer1={isPlayer1} /> */}
           <PayoffsTable history={gameState.roundHistory} />
         </div>
       </div>
@@ -514,10 +594,7 @@ function GameBoard({ playerFingerprint }) {
         open={modal.open}
         title={modal.title}
         message={modal.msg}
-        onClose={() => {
-          setModal({ open: false })
-          navigate("/prisoners")
-        }}
+        onClose={handleModalClose} // Updated to use handleModalClose
       />
     </div>
   )

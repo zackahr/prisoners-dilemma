@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { Users, Bot, Coins, Play, Trophy, Target } from "lucide-react"
+import { Users, Bot, Coins, Trophy, Target } from "lucide-react"
 import PayoffMatrix from "./PayoffMatrix"
 import "./GameRules.css"
 
@@ -12,7 +12,6 @@ const API_BASE_URL =
     : `${window.location.protocol}//${window.location.host}/api/prisoners`
 
 function GameRules({ setMatchId, setPlayerFingerprint }) {
-  const [gameMode, setGameMode] = useState("online")
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
 
@@ -30,7 +29,7 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
     console.log("Your player UUID:", uuid)
   }, [setPlayerFingerprint])
 
-  const startGame = async () => {
+  const handleStartGame = async (gameMode) => {
     setIsLoading(true)
     try {
       const playerFingerprint = localStorage.getItem("playerUUID")
@@ -126,44 +125,6 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
           <PayoffMatrix />
         </div>
 
-        {/* Strategy Tips */}
-        {/* <div className="strategy-tips-card">
-          <div className="strategy-header">
-            <Trophy className="strategy-icon" />
-            <h3 className="strategy-title">Strategy Tips</h3>
-          </div>
-          <div className="strategy-grid">
-            <div className="strategy-item">
-              <Target className="strategy-item-icon" />
-              <div className="strategy-content">
-                <h4>Mutual Cooperation</h4>
-                <p>Both players get 20 points - a solid, sustainable strategy</p>
-              </div>
-            </div>
-            <div className="strategy-item">
-              <Target className="strategy-item-icon" />
-              <div className="strategy-content">
-                <h4>Temptation vs Sucker</h4>
-                <p>Defecting against cooperation gives 30 points, but leaves opponent with 0</p>
-              </div>
-            </div>
-            <div className="strategy-item">
-              <Target className="strategy-item-icon" />
-              <div className="strategy-content">
-                <h4>Mutual Defection</h4>
-                <p>Both players get only 10 points - the punishment for mutual distrust</p>
-              </div>
-            </div>
-            <div className="strategy-item">
-              <Target className="strategy-item-icon" />
-              <div className="strategy-content">
-                <h4>Think Long-term</h4>
-                <p>Your choices influence your opponent's future decisions</p>
-              </div>
-            </div>
-          </div>
-        </div> */}
-
         {/* Game Mode Selection */}
         <div className="game-modes">
           <div className="game-mode-card">
@@ -173,10 +134,11 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
             <h3 className="game-mode-title">Play Online</h3>
             <p className="game-mode-description">Challenge a real player in strategic decision-making</p>
             <button
-              className={`game-mode-button online-button ${gameMode === "online" ? "active" : ""}`}
-              onClick={() => setGameMode("online")}
+              onClick={() => handleStartGame("online")}
+              className="game-mode-button online-button"
+              disabled={isLoading}
             >
-              {gameMode === "online" ? "Selected" : "Select Online"}
+              {isLoading ? "Creating Game..." : "Find Opponent"}
             </button>
           </div>
 
@@ -187,20 +149,13 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
             <h3 className="game-mode-title">Play with Bot</h3>
             <p className="game-mode-description">Practice against our intelligent AI opponent</p>
             <button
-              className={`game-mode-button bot-button ${gameMode === "bot" ? "active" : ""}`}
-              onClick={() => setGameMode("bot")}
+              onClick={() => handleStartGame("bot")}
+              className="game-mode-button bot-button"
+              disabled={isLoading}
             >
-              {gameMode === "bot" ? "Selected" : "Select Bot"}
+              {isLoading ? "Creating Game..." : "Start Game"}
             </button>
           </div>
-        </div>
-
-        {/* Start Game Button */}
-        <div className="start-game-section">
-          <button className="start-game-button" onClick={startGame} disabled={isLoading}>
-            <Play className="start-game-icon" />
-            {isLoading ? "Creating Game..." : "Let's Go Playing"}
-          </button>
         </div>
       </div>
     </div>
