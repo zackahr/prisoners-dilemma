@@ -154,6 +154,92 @@
   opacity: 0.9;
 }
 
+.how-to-play-instructions {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.instruction-section {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.instruction-intro {
+  font-size: 1.125rem;
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.instruction-details {
+  margin-bottom: 2rem;
+}
+
+.instruction-details h4,
+.examples-section h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.instruction-details ul {
+  list-style: none;
+  padding: 0;
+}
+
+.instruction-details li {
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.instruction-details li::before {
+  content: "•";
+  color: #3b82f6;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.examples-section {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.example {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.example:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.example h5 {
+  margin-bottom: 0.75rem;
+  color: white;
+  font-size: 1rem;
+}
+
+.example p {
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.example-result {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1rem !important;
+}
+
 .game-modes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));

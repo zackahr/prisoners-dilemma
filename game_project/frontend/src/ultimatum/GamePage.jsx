@@ -60,73 +60,35 @@ function RoundResultsModal({ data, isP1, isOpen, onClose }) {
         </div>
 
         <div className="modal-content">
-          <div className="results-grid">
-            <div className="player-section">
-              <h3 className="player-title">Player 1</h3>
-              <div className="result-item">
-                <span className="result-label">Kept:</span>
-                <span className="result-value">${100 - data.p1_offer}</span>
+          <div className="round-summary-section">
+            <h3>Round Summary</h3>
+            
+            <div className="proposal-summary">
+              <div className="proposal-item">
+                <h4>Your proposal:</h4>
+                <p>
+                  You kept ${isP1 ? (100 - data.p1_offer) : (100 - data.p2_offer)}, 
+                  offered ${isP1 ? data.p1_offer : data.p2_offer} → 
+                  <span className={`response-status ${isP1 ? data.p2_response : data.p1_response}`}>
+                    {(isP1 ? data.p2_response : data.p1_response) === 'accept' ? 'Accepted' : 'Rejected'} by the other player
+                  </span>
+                </p>
               </div>
-              <div className="result-item">
-                <span className="result-label">Offered:</span>
-                <span className="result-value">${data.p1_offer}</span>
+              
+              <div className="proposal-item">
+                <h4>Their proposal:</h4>
+                <p>
+                  They kept ${isP1 ? (100 - data.p2_offer) : (100 - data.p1_offer)}, 
+                  offered ${isP1 ? data.p2_offer : data.p1_offer} → 
+                  <span className={`response-status ${isP1 ? data.p1_response : data.p2_response}`}>
+                    {(isP1 ? data.p1_response : data.p2_response) === 'accept' ? 'Accepted' : 'Rejected'} by you
+                  </span>
+                </p>
               </div>
-              <div className="result-item">
-                <span className="result-label">Response:</span>
-                <span className={`result-value response ${data.p2_response}`}>
-                  {data.p2_response}
-                </span>
-              </div>
-              {/* NEW: Add P1 earnings */}
-              <div className="result-item earnings-item">
-                <span className="result-label"><strong>Earned:</strong></span>
-                <span className="result-value earnings-value">
-                  <strong>${data.p1_earned}</strong>
-                </span>
-              </div>
-            </div>
-
-            <div className="player-section">
-              <h3 className="player-title">Player 2</h3>
-              <div className="result-item">
-                <span className="result-label">Kept:</span>
-                <span className="result-value">${100 - data.p2_offer}</span>
-              </div>
-              <div className="result-item">
-                <span className="result-label">Offered:</span>
-                <span className="result-value">${data.p2_offer}</span>
-              </div>
-              <div className="result-item">
-                <span className="result-label">Response:</span>
-                <span className={`result-value response ${data.p1_response}`}>
-                  {data.p1_response}
-                </span>
-              </div>
-              {/* NEW: Add P2 earnings */}
-              <div className="result-item earnings-item">
-                <span className="result-label"><strong>Earned:</strong></span>
-                <span className="result-value earnings-value">
-                  <strong>${data.p2_earned}</strong>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Enhanced earnings section with more detail */}
-          <div className="earnings-section">
-            <div className="your-earnings">
-              <span className="earnings-label">You earned this round:</span>
-              <span className="earnings-amount">
-                ${isP1 ? data.p1_earned : data.p2_earned}
-              </span>
             </div>
             
-            {/* NEW: Add total earnings breakdown */}
-            <div className="earnings-breakdown">
-              <div className="earnings-detail">
-                <span>Player 1 Total: ${data.p1_earned}</span>
-                <span>Player 2 Total: ${data.p2_earned}</span>
-              </div>
+            <div className="payoff-summary">
+              <h4>Your total payoff this round: <strong>${isP1 ? data.p1_earned : data.p2_earned} coins</strong></h4>
             </div>
           </div>
         </div>
@@ -164,7 +126,7 @@ export default function GamePage() {
   const [isInitializing, setIsInitializing] = useState(true)
 
   // Game state for simultaneous play
-  const [inputOffer, setInputOffer] = useState("")
+  const [inputOffer, setInputOffer] = useState("0")
   const [offerTimeLeft, setOfferTimeLeft] = useState(OFFER_TIME_LIMIT)
   const [responseTimeLeft, setResponseTimeLeft] = useState(RESPONSE_TIME_LIMIT)
   const [currentPhase, setCurrentPhase] = useState("waiting")
@@ -410,7 +372,7 @@ export default function GamePage() {
     })
 
     if (success) {
-      setInputOffer("")
+      setInputOffer("0")
     }
   }, [inputOffer, sendMessage, playerFingerprint])
 
@@ -674,53 +636,100 @@ export default function GamePage() {
               {/* Offering phase */}
               {currentPhase === "offering" && !gameState?.waitingForOpponent && (
                 <div className="offer-section">
-                  <p className="offer-label">How much will you offer your opponent?</p>
-                  <div className="offer-breakdown">
-                    <p className="breakdown-text">
-                      You offer: <strong>${inputOffer || 0}</strong> | 
-                      You keep: <strong>${TOTAL_MONEY - (+inputOffer || 0)}</strong>
-                    </p>
+                  <div className="instructions-compact">
+                    <p><strong>You and a player are dividing a stack of coins. If the other player rejects your proposal, you both get nothing. How much will you offer?</strong></p>
                   </div>
-                  <div className="offer-input-container">
-                    <input
-                      type="number"
-                      value={inputOffer}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          setInputOffer('');
-                          return;
-                        }
-                        
-                        const numValue = Number(value);
-                        
-                        if (!isNaN(numValue) && numValue >= 0 && numValue <= TOTAL_MONEY) {
-                          setInputOffer(value);
-                        }
-                        else if (!isNaN(numValue) && numValue > TOTAL_MONEY) {
-                          setInputOffer(TOTAL_MONEY.toString());
-                        }
-                      }}
-                      min="0"
-                      max={TOTAL_MONEY}
-                      step="1"
-                      placeholder="0"
-                      className="offer-input"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (['e', 'E', '+', '-'].includes(e.key)) {
-                          e.preventDefault();
-                        }
-                      }}
-                    />
-                    <div className="dollar-sign">$</div>
+                  
+                  <div className="visual-offer-container">
+                    <div className="coin-stacks-container">
+                      <div className="coin-stack you-stack">
+                        <div className="coin-stack-visual" style={{ height: `${Math.max(30, Math.min(200, (TOTAL_MONEY - (+inputOffer || 0)) * 1.8))}px` }}>
+                          <div className="coin-amount">${TOTAL_MONEY - (+inputOffer || 0)}</div>
+                        </div>
+                        <div className="stack-label">YOU</div>
+                      </div>
+                      
+                      <div className="slider-container">
+                        <div className="percentage-scale">
+                          <div className="scale-marker top">100%</div>
+                          <div className="scale-marker middle">50%</div>
+                          <div className="scale-marker bottom">0%</div>
+                        </div>
+                        <div className="vertical-slider">
+                          <div className="slider-track"></div>
+                          <div 
+                            className="slider-handle"
+                            style={{ 
+                              top: `${100 - ((+inputOffer || 0) / TOTAL_MONEY * 100)}%`,
+                              cursor: 'grab'
+                            }}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              const slider = e.currentTarget.parentElement;
+                              const rect = slider.getBoundingClientRect();
+                              
+                              const handleMove = (clientY) => {
+                                const y = clientY - rect.top;
+                                const percentage = Math.max(0, Math.min(100, (y / rect.height) * 100));
+                                const offerAmount = Math.round((100 - percentage) / 100 * TOTAL_MONEY);
+                                setInputOffer(offerAmount.toString());
+                              };
+                              
+                              const handleMouseMove = (moveEvent) => {
+                                handleMove(moveEvent.clientY);
+                              };
+                              
+                              const handleMouseUp = () => {
+                                document.removeEventListener('mousemove', handleMouseMove);
+                                document.removeEventListener('mouseup', handleMouseUp);
+                              };
+                              
+                              document.addEventListener('mousemove', handleMouseMove);
+                              document.addEventListener('mouseup', handleMouseUp);
+                            }}
+                            onTouchStart={(e) => {
+                              e.preventDefault();
+                              const slider = e.currentTarget.parentElement;
+                              const rect = slider.getBoundingClientRect();
+                              
+                              const handleMove = (clientY) => {
+                                const y = clientY - rect.top;
+                                const percentage = Math.max(0, Math.min(100, (y / rect.height) * 100));
+                                const offerAmount = Math.round((100 - percentage) / 100 * TOTAL_MONEY);
+                                setInputOffer(offerAmount.toString());
+                              };
+                              
+                              const handleTouchMove = (moveEvent) => {
+                                handleMove(moveEvent.touches[0].clientY);
+                              };
+                              
+                              const handleTouchEnd = () => {
+                                document.removeEventListener('touchmove', handleTouchMove);
+                                document.removeEventListener('touchend', handleTouchEnd);
+                              };
+                              
+                              document.addEventListener('touchmove', handleTouchMove);
+                              document.addEventListener('touchend', handleTouchEnd);
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                      
+                      <div className="coin-stack other-stack">
+                        <div className="coin-stack-visual" style={{ height: `${Math.max(30, Math.min(200, (+inputOffer || 0) * 1.8))}px` }}>
+                          <div className="coin-amount">${+inputOffer || 0}</div>
+                        </div>
+                        <div className="stack-label">OTHER</div>
+                      </div>
+                    </div>
                   </div>
+                  
                   <button
                     onClick={submitOffer}
-                    disabled={!inputOffer || +inputOffer < 0 || +inputOffer > TOTAL_MONEY}
-                    className="submit-button"
+                    disabled={+inputOffer < 0 || +inputOffer > TOTAL_MONEY}
+                    className="submit-button-visual"
                   >
-                    SUBMIT OFFER
+                    SUBMIT
                   </button>
                 </div>
               )}
@@ -728,7 +737,11 @@ export default function GamePage() {
               {/* Responding phase */}
               {currentPhase === "responding" && gameState?.currentRoundState && (
                 <div className="responding-section">
-                  <h3>Respond to Offers:</h3>
+                  <div className="instructions-compact">
+                    <p><strong>Decision time:</strong> Accept or reject the opponent's offer. Your earnings depend on both decisions.</p>
+                  </div>
+                  
+                  <h3>Respond to Offer:</h3>
                   
                   {/* Response to opponent's offer */}
                   {isPlayer1 && gameState.currentRoundState.player2CoinsToOffer !== null && (
@@ -736,17 +749,6 @@ export default function GamePage() {
                       <div className="offer-display">
                         <p className="offer-label">Player 2 offers you:</p>
                         <p className="offer-amount-large">${gameState.currentRoundState.player2CoinsToOffer}</p>
-                        <div className="decision-info">
-                          <p className="keep-amount">
-                            You always keep: ${gameState.currentRoundState.player1CoinsToKeep || 0}
-                          </p>
-                          <p className="keep-amount">
-                            If you accept: You get ${(gameState.currentRoundState.player1CoinsToKeep || 0) + gameState.currentRoundState.player2CoinsToOffer} total
-                          </p>
-                          <p className="keep-amount">
-                            If you reject: You get ${gameState.currentRoundState.player1CoinsToKeep || 0} total
-                          </p>
-                        </div>
                       </div>
                       
                       {!gameState.currentRoundState.player1ResponseMade && (
@@ -781,17 +783,6 @@ export default function GamePage() {
                       <div className="offer-display">
                         <p className="offer-label">Player 1 offers you:</p>
                         <p className="offer-amount-large">${gameState.currentRoundState.player1CoinsToOffer}</p>
-                        <div className="decision-info">
-                          <p className="keep-amount">
-                            You always keep: ${gameState.currentRoundState.player2CoinsToKeep || 0}
-                          </p>
-                          <p className="keep-amount">
-                            If you accept: You get ${(gameState.currentRoundState.player2CoinsToKeep || 0) + gameState.currentRoundState.player1CoinsToOffer} total
-                          </p>
-                          <p className="keep-amount">
-                            If you reject: You get ${gameState.currentRoundState.player2CoinsToKeep || 0} total
-                          </p>
-                        </div>
                       </div>
                       
                       {!gameState.currentRoundState.player2ResponseMade && (

@@ -19,7 +19,7 @@ function GameTimer({ timeLeft, setTimeLeft, canMakeChoice, onTimeUp }) {
 
   const radius = 45
   const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (timeLeft / 10) * circumference
+  const strokeDashoffset = circumference - (timeLeft / 15) * circumference
 
   return (
     <div className="timer-circle-container">

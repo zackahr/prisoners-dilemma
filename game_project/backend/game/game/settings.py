@@ -47,8 +47,8 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
-# For development only - remove in production
-CORS_ALLOW_ALL_ORIGINS = True  # Set to False for production security
+# For development, allow all origins temporarily
+# CORS_ALLOW_ALL_ORIGINS = True  # Set to False for production security
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -78,14 +78,9 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
-# Disable CSRF for API testing (temporary)
-CSRF_COOKIE_SECURE = False
+# CSRF cookie settings
+CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
 CSRF_USE_SESSIONS = False
-
-# Or better - exempt specific paths
-CSRF_EXEMPT_URLS = [
-    r'/api/ultimatum/.*',  # Exempt all ultimatum API endpoints
-]
 
 # Security settings for HTTPS
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -112,6 +107,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'game.middleware.CSRFExemptMiddleware',  # Add custom CSRF exempt middleware
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',

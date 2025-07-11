@@ -2,7 +2,7 @@
 
 .game-page {
   min-height: 100vh;
-  /* background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 25%, #10b981 50%, #3b82f6 75%, #6366f1 100%); */
+  background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #1a202c 100%);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
   padding: 1.5rem 1rem;
@@ -46,6 +46,81 @@
   text-align: center;
   margin-bottom: 2rem;
   animation: fadeInDown 1s ease-out;
+}
+
+.instructions-compact {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  color: white;
+  text-align: center;
+}
+
+.instructions-compact p {
+  margin: 0;
+  line-height: 1.4;
+  font-size: 0.95rem;
+}
+
+.round-summary-section {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.round-summary-section h3 {
+  margin: 0 0 1.5rem 0;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.proposal-summary {
+  margin-bottom: 2rem;
+}
+
+.proposal-item {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.proposal-item h4 {
+  margin: 0 0 0.5rem 0;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.proposal-item p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.response-status.accept {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.response-status.reject {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.payoff-summary {
+  padding: 1.5rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.payoff-summary h4 {
+  margin: 0;
+  color: white;
+  font-size: 1.25rem;
 }
 
 .game-title {
@@ -158,13 +233,14 @@
 .game-card {
   width: 100%;
   max-width: 24rem;
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(30, 41, 59, 0.95);
   backdrop-filter: blur(20px);
   box-shadow: 0 35px 80px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   border-radius: 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
   overflow: hidden;
   position: relative;
+  color: white;
 }
 
 .game-card::before {
@@ -292,7 +368,7 @@
 }
 
 .offer-label {
-  color: #374151;
+  color: white;
   margin-bottom: 0.75rem;
   font-weight: 600;
   font-size: 1rem;
@@ -369,7 +445,7 @@
 .submit-button:hover:not(:disabled) {
   background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
   transform: translateY(-2px);
-  box-shadow: 0 15px 30px -5px rgba(239, 68, 68, 0.5);
+  box-shadow: 0 12px 25px -5px rgba(239, 68, 68, 0.5);
 }
 
 .submit-button:disabled {
@@ -500,16 +576,11 @@
 /* === SIMULTANEOUS GAMEPLAY STYLES === */
 
 .offer-response-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   padding: 1.5rem;
-  margin: 1rem 0;
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+  margin-bottom: 1rem;
 }
 
 .offer-response-card::before {
@@ -539,18 +610,9 @@
 }
 
 .response-made {
-  color: #059669;
-  font-weight: 700;
-  margin-top: 1rem;
-  padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  border: 1px solid #6ee7b7;
-  border-radius: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
   text-align: center;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  box-shadow: 0 4px 15px -3px rgba(16, 185, 129, 0.3);
+  font-style: italic;
 }
 
 .round-status {
@@ -668,30 +730,20 @@
 }
 
 .offer-amount-large {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #1f2937;
-}
-
-.offer-amount-large.highlight {
-  background: linear-gradient(135deg, #3b82f6, #06b6d4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: white;
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  text-align: center;
 }
 
 .decision-info {
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  border: 1px solid #bfdbfe;
   margin-bottom: 1rem;
 }
 
-.decision-text {
-  color: #374151;
-  font-weight: 600;
-  font-size: 1rem;
+.keep-amount {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
   margin-bottom: 0.5rem;
 }
 
@@ -703,17 +755,6 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-}
-
-.keep-amount {
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
-  margin-bottom: 0.25rem;
-}
-
-.keep-amount:last-child {
-  margin-bottom: 0;
 }
 
 .response-buttons {
@@ -1203,95 +1244,316 @@
   }
 }
 
-
-
-
-
-
-
-/* Add these to your existing GamePage.css */
-
-.timeout-popup {
+/* Modal Base Styles */
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10000;
+  animation: fadeInOverlay 0.3s ease-out;
 }
 
-.timeout-content {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  text-align: center;
-  max-width: 400px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+.modal-container {
+  background: #1a202c;
+  border-radius: 16px;
+  padding: 0;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  animation: slideUpModal 0.4s ease-out;
 }
 
-.timeout-icon {
-  width: 4rem;
-  height: 4rem;
-  color: #f59e0b;
-  margin-bottom: 1rem;
-}
-
-.timeout-content h2 {
-  margin-bottom: 1rem;
-  color: #1f2937;
-}
-
-.timeout-content p {
-  margin-bottom: 1rem;
-  color: #6b7280;
-}
-
-.timeout-button {
-  background: #3b82f6;
+.modal-header {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+  position: relative;
+}
+
+.modal-icon {
+  margin-right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+}
+
+.trophy-icon {
+  color: #ffd700;
+  width: 24px;
+  height: 24px;
+}
+
+.modal-title {
+  flex: 1;
+  margin: 0;
+  font-size: 1.5rem;
   font-weight: 600;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
   transition: background-color 0.2s;
 }
 
-.timeout-button:hover {
-  background: #2563eb;
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.timer-warning {
-  color: #ef4444;
-  font-weight: bold;
-  margin-left: 0.5rem;
+.modal-content {
+  padding: 2rem;
+  color: white;
 }
 
-.timeout-warning {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-top: 1rem;
+.modal-footer {
+  padding: 1.5rem 2rem;
+  background: #2d3748;
+  border-top: 1px solid #4a5568;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Round Results Modal Specific Styles */
+.round-results-modal .results-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.player-section {
+  background: #2d3748;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border-left: 4px solid #4299e1;
+}
+
+.player-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e2e8f0;
   text-align: center;
 }
 
-.timeout-warning p {
-  color: #dc2626;
+.result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #4a5568;
+}
+
+.result-item:last-child {
+  border-bottom: none;
+}
+
+.result-label {
+  color: #a0aec0;
+  font-weight: 500;
+}
+
+.result-value {
+  color: #e2e8f0;
   font-weight: 600;
-  margin: 0;
+}
+
+.result-value.response {
+  text-transform: capitalize;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+}
+
+.result-value.response.accept {
+  background: #c6f6d5;
+  color: #276749;
+}
+
+.result-value.response.reject {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+.earnings-section {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  color: white;
+}
+
+.your-earnings {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.earnings-label {
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.earnings-amount {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.auto-close-info {
+  color: #a0aec0;
+}
+
+.auto-close-info strong {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.continue-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.continue-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Timeout Modal Specific Styles */
+.timeout-modal .modal-content {
+  text-align: center;
+}
+
+.timeout-message {
+  color: #a0aec0;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+/* Updated Animations for Modals */
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpModal {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsive Design for Modals */
+@media (max-width: 768px) {
+  .round-results-modal .results-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .modal-container {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .modal-header {
+    padding: 1rem 1.5rem;
+  }
+  
+  .modal-content {
+    padding: 1.5rem;
+  }
+  
+  .modal-footer {
+    padding: 1rem 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .earnings-amount {
+    font-size: 1.5rem;
+  }
 }
 
 
+/* Additional CSS for Enhanced Earnings Display */
+.result-item.earnings-item {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-top: 0.5rem;
+  border: 1px solid #bbf7d0;
+}
 
+.result-value.earnings-value {
+  color: #059669 !important;
+  font-size: 1.1rem;
+}
 
+.earnings-breakdown {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+}
 
+.earnings-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  opacity: 0.9;
+  gap: 1rem;
+}
 
+.earnings-detail span {
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+}
 
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .earnings-detail {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .earnings-detail span {
+    text-align: center;
+  }
+}
 
 /* Timeout Popup Styles */
 .timeout-popup-overlay {
@@ -1421,320 +1683,286 @@
   }
 }
 
-
-
-
-
-
-
-
-/* Modal Base Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.75);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  animation: fadeInOverlay 0.3s ease-out;
-}
-
-.modal-container {
-  background: white;
-  border-radius: 16px;
-  padding: 0;
-  max-width: 600px;
-  width: 90%;
-  max-height: 90vh;
+/* Visual Offer Interface Styles */
+.visual-offer-container {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #e0f2fe 0%, #b3e5fc 50%, #81d4fa 100%);
+  border-radius: 1rem;
+  margin: 1rem 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  max-width: 100%;
   overflow: hidden;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-  animation: slideUpModal 0.4s ease-out;
 }
 
-.modal-header {
+.coin-stacks-container {
   display: flex;
-  align-items: center;
-  padding: 1.5rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  position: relative;
-}
-
-.modal-icon {
-  margin-right: 1rem;
-  display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
+  gap: 1.5rem;
+  padding: 1.5rem 0.5rem;
+  position: relative;
+  min-height: 280px;
+  max-width: 100%;
 }
 
-.trophy-icon {
-  color: #ffd700;
-  width: 24px;
-  height: 24px;
-}
-
-.modal-title {
-  flex: 1;
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.modal-close-btn {
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.modal-close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.modal-content {
-  padding: 2rem;
-}
-
-.modal-footer {
-  padding: 1.5rem 2rem;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-/* Round Results Modal Specific Styles */
-.round-results-modal .results-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-bottom: 2rem;
-}
-
-.player-section {
-  background: #f7fafc;
-  border-radius: 12px;
-  padding: 1.5rem;
-  border-left: 4px solid #4299e1;
-}
-
-.player-title {
-  margin: 0 0 1rem 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #2d3748;
-  text-align: center;
-}
-
-.result-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.result-item:last-child {
-  border-bottom: none;
-}
-
-.result-label {
-  color: #4a5568;
-  font-weight: 500;
-}
-
-.result-value {
-  color: #2d3748;
-  font-weight: 600;
-}
-
-.result-value.response {
-  text-transform: capitalize;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
-}
-
-.result-value.response.accept {
-  background: #c6f6d5;
-  color: #276749;
-}
-
-.result-value.response.reject {
-  background: #fed7d7;
-  color: #c53030;
-}
-
-.earnings-section {
-  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-  border-radius: 12px;
-  padding: 1.5rem;
-  text-align: center;
-  color: white;
-}
-
-.your-earnings {
+.coin-stack {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-}
-
-.earnings-label {
-  font-size: 1rem;
-  opacity: 0.9;
-}
-
-.earnings-amount {
-  font-size: 2rem;
-  font-weight: bold;
-}
-
-.auto-close-info {
-  color: #4a5568;
-}
-
-.auto-close-info strong {
-  color: #2d3748;
-  font-weight: 600;
-}
-
-.continue-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.continue-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-/* Timeout Modal Specific Styles */
-.timeout-modal .modal-content {
-  text-align: center;
-}
-
-.timeout-message {
-  color: #4a5568;
-  line-height: 1.6;
-  margin-bottom: 2rem;
-}
-
-/* Updated Animations for Modals */
-@keyframes fadeInOverlay {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUpModal {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Responsive Design for Modals */
-@media (max-width: 768px) {
-  .round-results-modal .results-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .modal-container {
-    width: 95%;
-    margin: 1rem;
-  }
-  
-  .modal-header {
-    padding: 1rem 1.5rem;
-  }
-  
-  .modal-content {
-    padding: 1.5rem;
-  }
-  
-  .modal-footer {
-    padding: 1rem 1.5rem;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .earnings-amount {
-    font-size: 1.5rem;
-  }
-}
-
-
-/* Additional CSS for Enhanced Earnings Display */
-.result-item.earnings-item {
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  margin-top: 0.5rem;
-  border: 1px solid #bbf7d0;
-}
-
-.result-value.earnings-value {
-  color: #059669 !important;
-  font-size: 1.1rem;
-}
-
-.earnings-breakdown {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.earnings-detail {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.9rem;
-  opacity: 0.9;
   gap: 1rem;
-}
-
-.earnings-detail span {
   flex: 1;
-  text-align: center;
-  font-weight: 600;
+  max-width: 100px;
+  min-width: 70px;
 }
 
-/* Responsive adjustments */
+.coin-stack-visual {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4a 50%, #f59e0b 100%);
+  border-radius: 0.5rem;
+  width: 70px;
+  position: relative;
+  border: 3px solid #d97706;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  min-height: 30px;
+  max-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coin-stack-visual::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  height: 20px;
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4a 50%, #f59e0b 100%);
+  border-radius: 0.5rem 0.5rem 0 0;
+  border: 3px solid #d97706;
+  border-bottom: none;
+}
+
+.coin-amount {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #7c2d12;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+  z-index: 1;
+  position: relative;
+  white-space: nowrap;
+}
+
+.stack-label {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.you-stack .stack-label {
+  color: #1f2937;
+}
+
+.other-stack .stack-label {
+  color: #374151;
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  height: 220px;
+  flex: 0 0 auto;
+  min-width: 60px;
+}
+
+.percentage-scale {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  padding: 10px 0;
+}
+
+.scale-marker {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ef4444;
+  line-height: 1;
+}
+
+.scale-marker.middle {
+  color: #f59e0b;
+}
+
+.vertical-slider {
+  position: relative;
+  height: 100%;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slider-track {
+  position: absolute;
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(to bottom, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+  border-radius: 3px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: #ef4444;
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  cursor: grab;
+  transition: all 0.2s ease;
+  z-index: 2;
+  transform: translateY(-50%);
+}
+
+.slider-handle:hover {
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.slider-handle:active {
+  cursor: grabbing;
+  transform: translateY(-50%) scale(0.95);
+}
+
+.submit-button-visual {
+  width: 200px;
+  margin: 1.5rem auto 0;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  font-weight: 700;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  border-radius: 2rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+  position: relative;
+  overflow: hidden;
+  display: block;
+}
+
+.submit-button-visual::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.submit-button-visual:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.submit-button-visual:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(239, 68, 68, 0.5);
+}
+
+.submit-button-visual:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive adjustments for visual interface */
 @media (max-width: 768px) {
-  .earnings-detail {
-    flex-direction: column;
-    gap: 0.5rem;
+  .visual-offer-container {
+    padding: 1rem 0.5rem;
   }
   
-  .earnings-detail span {
-    text-align: center;
+  .coin-stacks-container {
+    gap: 1rem;
+    padding: 1rem 0.25rem;
+    min-height: 220px;
+  }
+  
+  .coin-stack {
+    max-width: 80px;
+    min-width: 60px;
+  }
+  
+  .coin-stack-visual {
+    width: 60px;
+    max-height: 160px;
+  }
+  
+  .coin-amount {
+    font-size: 1rem;
+  }
+  
+  .slider-container {
+    height: 180px;
+    gap: 0.5rem;
+    min-width: 50px;
+  }
+  
+  .submit-button-visual {
+    width: 100%;
+    margin: 1rem 0 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .visual-offer-container {
+    padding: 0.75rem 0.25rem;
+    margin: 0.5rem 0;
+  }
+  
+  .coin-stacks-container {
+    gap: 0.75rem;
+    min-height: 180px;
+    padding: 0.75rem 0.125rem;
+  }
+  
+  .coin-stack {
+    max-width: 60px;
+    min-width: 50px;
+  }
+  
+  .coin-stack-visual {
+    width: 50px;
+    max-height: 120px;
+  }
+  
+  .coin-amount {
+    font-size: 0.9rem;
+  }
+  
+  .slider-container {
+    height: 140px;
+    gap: 0.25rem;
+    min-width: 40px;
+  }
+  
+  .scale-marker {
+    font-size: 0.75rem;
+  }
+  
+  .percentage-scale {
+    gap: 0.25rem;
   }
 }
 

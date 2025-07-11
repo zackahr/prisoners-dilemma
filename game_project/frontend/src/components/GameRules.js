@@ -100,7 +100,7 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
                 <span>1</span>
               </div>
               <h3 className="step-title">Choose Your Action</h3>
-              <p className="step-description">Each round, decide whether to Cooperate or Defect</p>
+              <p className="step-description">Each round, decide whether to Cooperate or Defect within 15 seconds</p>
             </div>
             <div className="step">
               <div className="step-number">
@@ -115,6 +115,13 @@ function GameRules({ setMatchId, setPlayerFingerprint }) {
               </div>
               <h3 className="step-title">Play 25 Rounds</h3>
               <p className="step-description">Accumulate points across multiple rounds to win</p>
+            </div>
+            <div className="step">
+              <div className="step-number">
+                <span>4</span>
+              </div>
+              <h3 className="step-title">Time Limit</h3>
+              <p className="step-description">You have 15 seconds per round to make your choice</p>
             </div>
           </div>
         </div>

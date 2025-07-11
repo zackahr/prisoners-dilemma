@@ -9,6 +9,16 @@ export default function PayoffsTable({ history }) {
     return r ? (player === 1 ? r.player1Points : r.player2Points) : "";
   };
 
+  // Calculate total scores for each player
+  const getPlayerTotal = (player) => {
+    return history
+      .filter(r => r.roundNumber <= 25) // Only count completed rounds
+      .reduce((total, round) => {
+        const points = player === 1 ? round.player1Points : round.player2Points;
+        return total + (points || 0);
+      }, 0);
+  };
+
   return (
     <>
       {/* ------------- title ABOVE the glass panel ------------- */}
@@ -22,6 +32,7 @@ export default function PayoffsTable({ history }) {
               {rounds.map((r) => (
                 <th key={r}>{r}</th>
               ))}
+              <th className="total-column">Total</th>
             </tr>
           </thead>
 
@@ -32,6 +43,7 @@ export default function PayoffsTable({ history }) {
                 {rounds.map((r) => (
                   <td key={r}>{val(r, p)}</td>
                 ))}
+                <td className="total-cell">{getPlayerTotal(p)}</td>
               </tr>
             ))}
           </tbody>

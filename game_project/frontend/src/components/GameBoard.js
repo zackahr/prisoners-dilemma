@@ -2,12 +2,10 @@ import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Clock, Users, Bot, Trophy, Target, Zap, Shield } from "lucide-react"
 import PayoffMatrix from "./PayoffMatrix"
-import RoundHistory from "./RoundHistory"
-import GameTimer from "./GameTimer"
 import "./GameBoard.css"
 import Modal from "./Modal"
 import PayoffsTable from "./PayoffsTable"
-
+import GameTimer from "./GameTimer"
 function GameBoard({ playerFingerprint }) {
   const { matchId } = useParams()
   const navigate = useNavigate()
@@ -26,7 +24,13 @@ function GameBoard({ playerFingerprint }) {
     player2LastAction: null,
     gameMode: "online",
   })
-  const [timeLeft, setTimeLeft] = useState(10)
+  const P1 = (gameState.roundHistory[gameState.roundHistory.length - 1]?.player1Points)
+  // console.log("gameState:", gameState);
+  // last round history
+  console.log("last round history p1 points:", gameState.roundHistory[gameState.roundHistory.length - 1]?.player1Points);
+  const P2 = (gameState.roundHistory[gameState.roundHistory.length - 1]?.player2Points)
+  console.log("P1:", P1, "P2:", P2)
+  const [timeLeft, setTimeLeft] = useState(15)
   const [canMakeChoice, setCanMakeChoice] = useState(true)
   const [isPlayer1, setIsPlayer1] = useState(true)
   const [waitingForMyAction, setWaitingForMyAction] = useState(false)
@@ -34,8 +38,11 @@ function GameBoard({ playerFingerprint }) {
   const socketRef = useRef(null)
   const timedOutRef = useRef(false)
   const [modal, setModal] = useState({ open: false, title: "", msg: "", redirectTo: "/prisoners" })
-  const [roundPhase, setRoundPhase] = useState("choosing") // 'choosing' or 'results'
+  const [roundPhase, setRoundPhase] = useState("choosing") // 'choosing', 'results', 'transition'
   const [lastRoundResult, setLastRoundResult] = useState(null)
+  const [transitionCountdown, setTransitionCountdown] = useState(3)
+  const [showInitialCountdown, setShowInitialCountdown] = useState(false)
+  const [initialCountdown, setInitialCountdown] = useState(3)
 
   // Connect to WebSocket
   useEffect(() => {
@@ -136,19 +143,48 @@ function GameBoard({ playerFingerprint }) {
     }
   }, [matchId, navigate, playerFingerprint])
 
-  // Effect to manage the results display duration
+  // Effect for the initial "3, 2, 1, Go!" countdown
+  useEffect(() => {
+    if (showInitialCountdown) {
+      if (initialCountdown > 0) {
+        const timer = setTimeout(() => {
+          setInitialCountdown(prev => prev - 1)
+        }, 1000)
+        return () => clearTimeout(timer)
+      } else {
+        // After "Go!" is shown for a second (implicitly, since countdown is 0), hide the countdown
+        const timer = setTimeout(() => {
+          setShowInitialCountdown(false)
+        }, 1000) // Show "Go!" for 1 second
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [showInitialCountdown, initialCountdown])
+
+  // Effect to manage the results display duration and round transitions
   useEffect(() => {
     if (roundPhase === "results") {
       const timer = setTimeout(() => {
-        setRoundPhase("choosing")
-        setLastRoundResult(null)
-        setTimeLeft(10) // Reset timer for the new round
-        setCanMakeChoice(true)
+        setRoundPhase("transition")
+        setTransitionCountdown(3)
       }, 4000) // Show results for 4 seconds
 
       return () => clearTimeout(timer)
+    } else if (roundPhase === "transition") {
+      if (transitionCountdown > 0) {
+        const timer = setTimeout(() => {
+          setTransitionCountdown(prev => prev - 1)
+        }, 1000)
+        return () => clearTimeout(timer)
+      } else {
+        // Transition countdown finished, start new round
+        setRoundPhase("choosing")
+        setLastRoundResult(null)
+        setTimeLeft(15) // Reset timer for the new round
+        setCanMakeChoice(true)
+      }
     }
-  }, [roundPhase])
+  }, [roundPhase, transitionCountdown])
 
   const updateGameState = (newState, fingerprint) => {
     console.log("Updating game state with fingerprint:", fingerprint)
@@ -168,6 +204,11 @@ function GameBoard({ playerFingerprint }) {
           setRoundPhase("results")
           setCanMakeChoice(false) // Disable choices during results phase
         }
+      }
+
+      // Check if the game is starting
+      if (prev.waitingForOpponent && !newState.waitingForOpponent) {
+        setShowInitialCountdown(true)
       }
 
       const merged = { ...prev, ...newState }
@@ -367,6 +408,20 @@ function GameBoard({ playerFingerprint }) {
     )
   }
 
+  if (showInitialCountdown) {
+    return (
+      <div className="game-page">
+        <div className="timer-section round-transition">
+          <div className="transition-content">
+            <div className="transition-number">{initialCountdown > 0 ? initialCountdown : "Go!"}</div>
+            <h4>Round 1</h4>
+            <p>Get ready for the first round!</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (gameState.gameOver) {
     const myScore = isPlayer1 ? gameState.player1Score : gameState.player2Score
     const opponentScore = isPlayer1 ? gameState.player2Score : gameState.player1Score
@@ -442,7 +497,7 @@ function GameBoard({ playerFingerprint }) {
           <div className="game-title-section">
             <h1 className="game-title">Prisoner's Dilemma</h1>
             <p className="game-subtitle">
-              Round {gameState.currentRound} of {gameState.maxRounds}
+              Round {roundPhase === "choosing" ? gameState.currentRound : gameState.currentRound - 1} of {gameState.maxRounds}
             </p>
           </div>
 
@@ -491,10 +546,30 @@ function GameBoard({ playerFingerprint }) {
                   onTimeUp={handleTimeout} // Calls handleTimeout when timer expires
                 />
               </div>
-            ) : (
+            ) : roundPhase === "results" ? (
               <div className="timer-section results-display">
                 <Trophy className="results-icon" />
                 <h4>Round {gameState.currentRound > 1 ? gameState.currentRound - 1 : 1} Results</h4>
+                {/* {lastRoundResult && (
+                  <div className="round-results-summary">
+                    <div className="actions-display">
+                      <span>You: {isPlayer1 ? lastRoundResult.player1Action : lastRoundResult.player2Action}</span>
+                      <span>Opponent: {isPlayer1 ? lastRoundResult.player2Action : lastRoundResult.player1Action}</span>
+                    </div>
+                    <div className="points-display">
+                      <span>You earned: {isPlayer1 ? lastRoundResult.player1Payoff : lastRoundResult.player2Payoff} points</span>
+                      <span>Opponent earned: {isPlayer1 ? lastRoundResult.player2Payoff : lastRoundResult.player1Payoff} points</span>
+                    </div>
+                  </div>
+                )} */}
+              </div>
+            ) : (
+              <div className="timer-section round-transition">
+                <div className="transition-content">
+                  <div className="transition-number">{transitionCountdown}</div>
+                  <h4>Round {gameState.currentRound}</h4>
+                  <p>Get ready for the next round!</p>
+                </div>
               </div>
             )}
 
@@ -505,17 +580,16 @@ function GameBoard({ playerFingerprint }) {
                   <h3>Player 1</h3>
                 </div>
                 <div className="score-value">
-                  {roundPhase === "results" && lastRoundResult ? (
-                    <span className="round-gain">+{gameState.roundHistory[gameState.roundHistory.length - 1].player1Points}</span>
-                  ) : gameState.roundHistory.length > 0 ? (
-                    gameState.roundHistory[gameState.roundHistory.length - 1].player1Points || 
-                    gameState.roundHistory[gameState.roundHistory.length - 1].player1Payoff || 0
+                  {roundPhase === "results" || roundPhase === "transition" ? (
+                    P1
+                  ) : roundPhase === "choosing" ? (
+                    ""
                   ) : (
-                    gameState.player1Score
+                    P1
                   )}
                 </div>
                 <div className="score-label">
-                  {roundPhase === "results" ? "Round Gain" : gameState.roundHistory.length > 0 ? "Current Round" : "Total Score"}
+                  {roundPhase === "results" || roundPhase === "transition" ? "Total Score" : roundPhase === "choosing" ? "This Round" : "Total Score"}
                 </div>
               </div>
 
@@ -525,23 +599,24 @@ function GameBoard({ playerFingerprint }) {
                   <h3>Player 2</h3>
                 </div>
                 <div className="score-value">
-                  {roundPhase === "results" && lastRoundResult ? (
-                    <span className="round-gain">+{gameState.roundHistory[gameState.roundHistory.length - 1].player2Points}</span>
-                  ) : gameState.roundHistory.length > 0 ? (
-                    gameState.roundHistory[gameState.roundHistory.length - 1].player2Points || 
-                    gameState.roundHistory[gameState.roundHistory.length - 1].player2Payoff || 0
+                  {roundPhase === "results" || roundPhase === "transition" ? (
+                    P2
+                  ) : roundPhase === "choosing" ? (
+                    ""
                   ) : (
-                    gameState.player2Score
+                    P2
                   )}
                 </div>
                 <div className="score-label">
-                  {roundPhase === "results" ? "Round Gain" : gameState.roundHistory.length > 0 ? "Current Round" : "Total Score"}
+                  {roundPhase === "results" || roundPhase === "transition" ? "Total Score" : roundPhase === "choosing" ? "This Round" : "Total Score"}
                 </div>
               </div>
             </div>
 
             <div className="action-section">
-              <h3 className="action-title">{roundPhase === "choosing" ? "Make Your Choice" : "Round Over"}</h3>
+              <h3 className="action-title">
+                {roundPhase === "choosing" ? "Make Your Choice" : roundPhase === "results" ? "Round Over" : "Next Round Starting..."}
+              </h3>
               <div className="action-buttons">
                 <button
                   className={`action-button cooperate-button ${
