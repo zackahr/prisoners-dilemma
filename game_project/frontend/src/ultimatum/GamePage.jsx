@@ -19,12 +19,12 @@ import { gameApi, getPlayerFingerprint } from "../services/gameApi"
 import "./GamePage.css"
 
 function RoundResultsModal({ data, isP1, isOpen, onClose }) {
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(15);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    setCountdown(5);
+    setCountdown(15);
     
     const timer = setInterval(() => {
       setCountdown(prev => {
@@ -112,7 +112,7 @@ function RoundResultsModal({ data, isP1, isOpen, onClose }) {
 const MAX_ROUNDS = 25
 const TOTAL_MONEY = 100
 const OFFER_TIME_LIMIT = 25
-const RESPONSE_TIME_LIMIT = 10
+const RESPONSE_TIME_LIMIT = 25
 
 export default function GamePage() {
   const navigate = useNavigate()
@@ -613,7 +613,7 @@ export default function GamePage() {
               <div className="money-display">
                 <div className="money-content">
                   <DollarSign className="money-icon" />
-                  <span>{TOTAL_MONEY}</span>
+                  <span>{TOTAL_MONEY - (+inputOffer || 0)}</span>
                 </div>
               </div>
 
@@ -646,7 +646,7 @@ export default function GamePage() {
                         <div className="coin-stack-visual" style={{ height: `${Math.max(30, Math.min(200, (TOTAL_MONEY - (+inputOffer || 0)) * 1.8))}px` }}>
                           <div className="coin-amount">${TOTAL_MONEY - (+inputOffer || 0)}</div>
                         </div>
-                        <div className="stack-label">YOU</div>
+                        <div className="stack-label">KEPT</div>
                       </div>
                       
                       <div className="slider-container">
@@ -719,7 +719,7 @@ export default function GamePage() {
                         <div className="coin-stack-visual" style={{ height: `${Math.max(30, Math.min(200, (+inputOffer || 0) * 1.8))}px` }}>
                           <div className="coin-amount">${+inputOffer || 0}</div>
                         </div>
-                        <div className="stack-label">OTHER</div>
+                        <div className="stack-label">OFFER</div>
                       </div>
                     </div>
                   </div>
