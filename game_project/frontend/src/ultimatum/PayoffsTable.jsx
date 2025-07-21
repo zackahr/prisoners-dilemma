@@ -24,6 +24,13 @@ export default function PayoffsTable({ history }) {
     return playerNumber === 1 ? (roundData.player1Earned ?? "") : (roundData.player2Earned ?? "")
   }
 
+  const getPlayerTotal = (playerNumber) => {
+    return history.reduce((total, round) => {
+      const earnings = playerNumber === 1 ? (round.player1Earned ?? 0) : (round.player2Earned ?? 0)
+      return total + earnings
+    }, 0)
+  }
+
   return (
     <>
       <h3 className="payoffs-title">Game History</h3>
@@ -38,6 +45,7 @@ export default function PayoffsTable({ history }) {
                   {r}
                 </th>
               ))}
+              <th className="total-col">Total</th>
             </tr>
           </thead>
 
@@ -49,6 +57,7 @@ export default function PayoffsTable({ history }) {
                   {getPlayerOffer(r, 1)}
                 </td>
               ))}
+              <td className="empty-total-cell">-</td>
             </tr>
             <tr>
               <td className="player-label">P2 Offer</td>
@@ -57,6 +66,7 @@ export default function PayoffsTable({ history }) {
                   {getPlayerOffer(r, 2)}
                 </td>
               ))}
+              <td className="empty-total-cell">-</td>
             </tr>
             <tr>
               <td className="player-label">P1 Earned</td>
@@ -65,6 +75,9 @@ export default function PayoffsTable({ history }) {
                   {getPlayerEarnings(r, 1)}
                 </td>
               ))}
+              <td className="running-total-cell">
+                ${getPlayerTotal(1)}
+              </td>
             </tr>
             <tr>
               <td className="player-label">P2 Earned</td>
@@ -73,6 +86,9 @@ export default function PayoffsTable({ history }) {
                   {getPlayerEarnings(r, 2)}
                 </td>
               ))}
+              <td className="running-total-cell">
+                ${getPlayerTotal(2)}
+              </td>
             </tr>
           </tbody>
         </table>

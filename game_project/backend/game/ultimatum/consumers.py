@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 # Separate timeout constants
 PROPOSER_TIMEOUT = 25  # 25 seconds for making offers
-RESPONSE_TIMEOUT = 10  # 10 seconds for responding to offers
+RESPONSE_TIMEOUT = 25  # 25 seconds for responding to offers
 
 class UltimatumGameConsumer(AsyncWebsocketConsumer):
 

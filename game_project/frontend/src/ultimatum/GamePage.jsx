@@ -239,6 +239,7 @@ export default function GamePage() {
       setOfferTimeLeft(OFFER_TIME_LIMIT)
       setResponseTimeLeft(RESPONSE_TIME_LIMIT)
       setTimerInitialized(true)
+      setInputOffer("0") // Reset offer input for new round
     }
 
     // Reset timer initialization flag when round is complete
@@ -371,9 +372,7 @@ export default function GamePage() {
       coins_to_offer: coinsToOffer,
     })
 
-    if (success) {
-      setInputOffer("0")
-    }
+    // Don't reset inputOffer - keep the submitted offer visible
   }, [inputOffer, sendMessage, playerFingerprint])
 
   // Respond to offers
@@ -610,12 +609,12 @@ export default function GamePage() {
             </div>
 
             <div className="game-card-content">
-              <div className="money-display">
+              {/* <div className="money-display">
                 <div className="money-content">
                   <DollarSign className="money-icon" />
                   <span>{TOTAL_MONEY - (+inputOffer || 0)}</span>
                 </div>
-              </div>
+              </div> */}
 
               {/* Waiting for opponent to join */}
               {gameState?.waitingForOpponent && (
@@ -646,7 +645,7 @@ export default function GamePage() {
                         <div className="coin-stack-visual" style={{ height: `${Math.max(30, Math.min(200, (TOTAL_MONEY - (+inputOffer || 0)) * 1.8))}px` }}>
                           <div className="coin-amount">${TOTAL_MONEY - (+inputOffer || 0)}</div>
                         </div>
-                        <div className="stack-label">KEPT</div>
+                        <div className="stack-label">KEEP</div>
                       </div>
                       
                       <div className="slider-container">
@@ -741,74 +740,94 @@ export default function GamePage() {
                     <p><strong>Decision time:</strong> Accept or reject the opponent's offer. Your earnings depend on both decisions.</p>
                   </div>
                   
-                  <h3>Respond to Offer:</h3>
-                  
                   {/* Response to opponent's offer */}
                   {isPlayer1 && gameState.currentRoundState.player2CoinsToOffer !== null && (
-                    <div className="offer-response-card">
-                      <div className="offer-display">
-                        <p className="offer-label">Player 2 offers you:</p>
-                        <p className="offer-amount-large">${gameState.currentRoundState.player2CoinsToOffer}</p>
-                      </div>
-                      
-                      {!gameState.currentRoundState.player1ResponseMade && (
-                        <div className="response-buttons">
-                          <button
-                            onClick={() => respondToPlayer("player_2", true)}
-                            className="accept-button"
-                          >
-                            <CheckCircle className="button-icon" />
-                            ACCEPT
-                          </button>
-                          <button
-                            onClick={() => respondToPlayer("player_2", false)}
-                            className="reject-button"
-                          >
-                            <XCircle className="button-icon" />
-                            REJECT
-                          </button>
+                    <div className="visual-response-container">
+                      <div className="coin-stacks-container response-layout">
+                        <div className="coin-stack other-stack">
+                          <div className="coin-stack-visual" style={{ height: `${Math.max(80, Math.min(200, (TOTAL_MONEY - gameState.currentRoundState.player2CoinsToOffer) * 2.2))}px` }}>
+                            <div className="coin-amount">${TOTAL_MONEY - gameState.currentRoundState.player2CoinsToOffer}</div>
+                          </div>
+                          <div className="stack-label">They want to keep</div>
                         </div>
-                      )}
-                      
-                      {gameState.currentRoundState.player1ResponseMade && (
-                        <p className="response-made">
-                          You {gameState.currentRoundState.player1Response}ed this offer
-                        </p>
-                      )}
+                        
+                        <div className="response-buttons-container">
+                          {!gameState.currentRoundState.player1ResponseMade && (
+                            <>
+                              <button
+                                onClick={() => respondToPlayer("player_2", true)}
+                                className="accept-button-large"
+                              >
+                                ACCEPT
+                              </button>
+                              <button
+                                onClick={() => respondToPlayer("player_2", false)}
+                                className="reject-button-large"
+                              >
+                                REJECT
+                              </button>
+                            </>
+                          )}
+                          
+                          {gameState.currentRoundState.player1ResponseMade && (
+                            <div className="response-made-large">
+                              You {gameState.currentRoundState.player1Response}ed this offer
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="coin-stack you-stack">
+                          <div className="coin-stack-visual" style={{ height: `${Math.max(80, Math.min(200, gameState.currentRoundState.player2CoinsToOffer * 2.2))}px` }}>
+                            <div className="coin-amount">${gameState.currentRoundState.player2CoinsToOffer}</div>
+                          </div>
+                          <div className="stack-label">YOU</div>
+                        </div>
+                      </div>
                     </div>
                   )}
 
                   {isPlayer2 && gameState.currentRoundState.player1CoinsToOffer !== null && (
-                    <div className="offer-response-card">
-                      <div className="offer-display">
-                        <p className="offer-label">Player 1 offers you:</p>
-                        <p className="offer-amount-large">${gameState.currentRoundState.player1CoinsToOffer}</p>
-                      </div>
-                      
-                      {!gameState.currentRoundState.player2ResponseMade && (
-                        <div className="response-buttons">
-                          <button
-                            onClick={() => respondToPlayer("player_1", true)}
-                            className="accept-button"
-                          >
-                            <CheckCircle className="button-icon" />
-                            ACCEPT
-                          </button>
-                          <button
-                            onClick={() => respondToPlayer("player_1", false)}
-                            className="reject-button"
-                          >
-                            <XCircle className="button-icon" />
-                            REJECT
-                          </button>
+                    <div className="visual-response-container">
+                      <div className="coin-stacks-container response-layout">
+                        <div className="coin-stack other-stack">
+                          <div className="coin-stack-visual" style={{ height: `${Math.max(80, Math.min(200, (TOTAL_MONEY - gameState.currentRoundState.player1CoinsToOffer) * 2.2))}px` }}>
+                            <div className="coin-amount">${TOTAL_MONEY - gameState.currentRoundState.player1CoinsToOffer}</div>
+                          </div>
+                          <div className="stack-label">They want to keep</div>
                         </div>
-                      )}
-                      
-                      {gameState.currentRoundState.player2ResponseMade && (
-                        <p className="response-made">
-                          You {gameState.currentRoundState.player2Response}ed this offer
-                        </p>
-                      )}
+                        
+                        <div className="response-buttons-container">
+                          {!gameState.currentRoundState.player2ResponseMade && (
+                            <>
+                              <button
+                                onClick={() => respondToPlayer("player_1", true)}
+                                className="accept-button-large"
+                              >
+                                ACCEPT
+                              </button>
+                              <button
+                                onClick={() => respondToPlayer("player_1", false)}
+                                className="reject-button-large"
+                              >
+                                REJECT
+                              </button>
+                            </>
+                          )}
+                          
+                          {gameState.currentRoundState.player2ResponseMade && (
+                            <div className="response-made-large">
+                              You {gameState.currentRoundState.player2Response}ed this offer
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="coin-stack you-stack">
+                          <div className="coin-stack-visual" style={{ height: `${Math.max(80, Math.min(200, gameState.currentRoundState.player1CoinsToOffer * 2.2))}px` }}>
+                            <div className="coin-amount">${gameState.currentRoundState.player1CoinsToOffer}</div>
+                          </div>
+                          <div className="stack-label">You</div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -852,7 +871,7 @@ export default function GamePage() {
         </div>
 
         {/* Scores */}
-        {gameState && !gameState.waitingForOpponent && (
+        {/* {gameState && !gameState.waitingForOpponent && (
           <div className="scores-section">
             <div className="score-item">
               <span>Your Score:</span>
@@ -867,7 +886,7 @@ export default function GamePage() {
               </span>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Game history */}
         {gameState && gameState.roundHistory && gameState.roundHistory.length > 0 && (
